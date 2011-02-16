@@ -1,0 +1,392 @@
+parser help:
+    http://en.wikipedia.org/wiki/Parsing
+    http://en.wikipedia.org/wiki/Operator-precedence_parser
+
+Név ötletek szerzése innen:
+    http://maven.badgers-in-foil.co.uk/sites/metaas/apidocs/uk/co/badgersinfoil/metaas/dom/ASArg.html
+
+source struct:
+    root_dir
+        |_ parser
+        |   |_ TandoraParser.h # Tandora lang parser
+        |   |_ TandoraParser.cpp
+        |   |_ Token.h # Token, TokenIterator classes, and helper macros
+        |   |_ Token.cpp
+		|   |_ TandoraTokens.h # Tandora lang token definitions and maps
+		|	|_ PPParser.h # preprocessor parser
+		|	|_ PPParser.cpp
+		|	|_ PPTokens.h # preprocessor token definitions and maps
+		|	|_ othar langs...
+        |_ compiler
+		|	|_ Compiler.h # compiler abstarct class
+		|	|_ Compiler.cpp
+		|	|_ JavaScript.h # javascript compiler class
+		|	|_ JavaScript.cpp
+		|	|_ other langs...
+		|_ tree
+		|	|_ SourceTree.h
+		|	|_ more class defined later...
+        |_ interpreter
+		|	|_ # empty, only plan...
+        |_ libs
+		|	|_ # external libs
+		|_ settings.h # global settings
+		|_ global.h # global macros, const etc...
+        |_ Tandora.cpp # main file
+
+A nyelv alapja az ActionScript 3, az ettől eltérő módosítások felsorolása:
+
+- CPP-ből a template-ek használatának implementálása (nem 100%, hogy meg lesz valósítva):
+    Kizárólag osztályok-nál lehet használni és az osztályon belül pedig tipus meghatorázásra fel lehet használni
+    a template paramétereket. Osztály származtatásnál és interfaceknél is használható. Template Interface implemetálásakor
+    csak olyan osztály adható meg template palaméterként, ami az ősökben implemetált iterfacek temeplétben megadott osztályai vagy
+    azok leszármazottai.
+
+    Szintaxis:
+
+    public class Button<T1, T2, Tn=DefultValue> extends Element<ClassName> implements IEventDispatcher<Button<T1, T2, Tn>>
+    {
+
+    }
+
+    példa a származtatásra
+    interface I<T> { public function get x():T; }
+    class A { public function get y():Number; }
+    class B extends A {}
+    class X {}
+
+    class C<T> implements I<T> { public function get x():T{} }
+    class D extends C<A> implements I<A> {  } // get x():T {} -> get x():A {}
+    class E extends D implements I<B> {} // get x():A {} -> get x():B {} ez ok, mert B, A-ból származik ha nem így lenne akkor adna hibát csak
+    class F extends D implements I<X> {} // get x():A {} -> get x():X {} ez nem jó, mert X, se A-ból se B-ből nem származik
+
+- CPP-ből a typedef implemetálása:
+    A typedef használható packagen és osztályon belül, osztály származtatáskor öröklődik az is, viszont felülírható, az override kulszóval.
+    Felülíráskor figyelni kell arra, hogy csak olyan új tipusra mutathat, ami az előző tipusdefinició osztályából származik vagy ugyan az.
+    A csomagokban definiált tipusokat nem lehet felülírni semmilyen módon.
+
+    package x
+    {
+        public typedef HTMLEvent Event<HTMLElement>;
+        internal typedef PrivateEvent Event<Object>;
+
+        public class DataModel<T> extends DataModelEvent<T>
+        {
+            public typedef QueryResult QueryResult<T>;
+
+            public function query(sql:String):QueryResult
+            {
+
+            }
+        }
+
+        public class ModelPatient extends DataModel<Patient>
+        {
+
+        }
+
+        typedef PatientQS ModelPatient.QueryResult;
+
+        public class ModelMedicine extends DataModel<Medicine>
+        {
+
+        }
+
+        public class ModelMyType extends DataModel<Medicine>
+        {
+            override public typedef QueryResult QueryResultExt<Medicine>;
+        }
+
+        var qs:ModelPatient.QueryResult = ModelPatient.query('...'); // ebben az esetben a qs változó tipusa QueryResult<Patient>
+        var qs:ModelMedicine.QueryResult = ModelMedicine.query('...'); // ebben az esetben a qs változó típusa QueryResult<Medicine>
+        var qs:PatientQS;
+    }
+
+- CPP-ből preprocessor implemetálása (http://en.wikipedia.org/wiki/C_preprocessor):
+    kulcsszavak:
+        if          : feltétel vizsgálat
+        ifdef       : annak a vizsgálata, hogy definiálva ven-e egy preprocessor változó
+        else        : ha nem teljesült a feltétel akkor ez az ág fut le
+        elif        : ha nem telhesült az előző feltétel és ez igen akkor ez fut le
+        endif       : a feltétel vizsgálatok végét jelzi
+        define      : definiál egy változót, függvényt
+        defined()   : megvázsgalja, hogy a paraméterül kapott változó,függvény definiálva van-e
+        undef       : törli a változót, függvényt
+        include     :
+
+    rendszer változók:
+        __LINE__    : aktuális sor sorszáma
+        __FILE__    : aktuális fájl
+        __FILEN__   : aktuális fájl neve
+        __PATH__    : aktuális fájl elérési útvonala
+        __PCKG__    : package, aktuális csomag neve
+        __CLASS__   : aktuális osztály neve
+        __FUNC__    : aktuális függvény neve
+        __DEBUG__   : ha definiálva van akkor debug mode on
+        __LANG__    : melyik nyelvet fordítja éppen
+        __TEST__    : akkor van definiálva, ha unittest-et fordít
+
+- Python-ból a keyword arguments-es függvényhívás (http://docs.python.org/tutorial/controlflow.html#keyword-arguments):
+    miről is van szó:
+
+    definíció:
+    function kwExample(x:Number=0, y:Number=0, label:String = ""):void
+    {
+
+    }
+
+    függvényhívás:
+    kwExample(label="Test", y=10);
+
+- Singleton pattern natív támogatása:
+    1 esetben nem működik, ha tipustalan a változó, amiben tároljuk az osztály objektumát pl.: var x:Class = SingletonTest; x.objProp; valszeg hibát fog dobni..
+
+    [Singleton(method="getInstance")]
+    class SingletonTest
+    {
+        // ha nincs definiálva autómatikusan létrehoz egyet
+        public static function getInstance():SingletonTest
+        {
+
+        }
+
+        public var objProp:String = "";
+    }
+
+    SingletonTest.objProp; -> SingletonTest.getInstance().objProp;
+
+- Unittest támogatás:
+    Ezek a részek csak akkor kerülnek bele a kódba ha megvan adva a unittest=enabled beaállítás vagy valami
+    Lesz egy globális objektum: UnitTest, amivel le lehet futtatni a teszteket így:
+    UnitTest.run(Class);
+
+    [UnitTestInit]
+    public function uintTestInit()
+    {
+
+    }
+
+    public function xyz(a1, a2)
+    {
+        test:
+            // ide jön a tesztelő kód
+            this.xyz(1, -1); // ok
+            this.xyz(1, 1); // fail
+
+        body:
+            // ide pedig a fügvény törzse
+    }
+
+
+Fordító felépítése:
+=================================
+- alapvetően a parser-nek a parseIntoTree függvénye, már olyen elemeket hoz létre, ami az alap compiler modulból származik és a translate függvénye
+  a már megfelelő nyelve alakítja az adott kifejezést
+
+  felépítés:
+    CompilerModul:
+        - sok-sok abastract osztály az egyéb nyelvi elemek: PackageDefinition, ClassDefinition, IfStatement ...
+
+    JavaScriptModul:
+        - a CompilerModulban definiált osztályokat kell itt felülírni, és gyakorlatilag implementálva van egy nyelv
+
+	Mindegyik osztálynak lesz egy statikus metódusa(createFromTokenStream(stream)),
+	ami képes létrehozni egy streamből az adott osztályt, értelem szerűen a streamnek
+	azzal a tokennek kall kezdődnie, ahonnan kezdődik az adott osztály leírása.
+	Az osztályok konstruktorai pedig úgy épülnek fel, hogy jól paraméterezve létre tudja hozni az adott
+	kód részletet.
+
+    Compiler:
+        CodeContext
+            |_ TopLevelContext
+            |_ PackageContext
+            |_ ClassContext
+            |_ FunctionContext
+            |   |_ MethodContext
+            |_ WithContext
+
+        ScriptElement
+            |_ CompilationUnit a fájl vagy string egészére vonatkozó osztály
+            |_ Literal
+            |   |_ NumberLiteral
+            |   |   |_ IntLiteral 1
+            |   |   |_ HexLiteral 0x1
+            |   |   |_ FloatLiteral 1.0
+            |   |   |_ BinaryLiteral 0b1
+            |   |   |_ OctLiteral 07
+            |   |_ StringLiteral "..."
+            |   |_ BooleanLiteral ture/false
+            |   |_ VoidLiteral void
+            |   |_ StarLiteral *
+            |   |_ RegexpLiteral /regex/flags
+            |   |_ NullLiteral null
+            |_ Expression
+            |   |_ ArithmeticOperation
+            |   |   |_ Add +
+            |   |   |_ Subtract -
+            |   |   |_ Power **
+            |   |   |_ Multiply *
+            |   |   |_ Division /
+            |   |   |_ Modulo %
+            |   |   |_ Increment ++x ; x++
+            |   |   |_ Decrement --x ; x--
+            |   |   |_ Positive +2
+            |   |   |_ Negative -2
+            |   |   |_ Assign x = expr
+            |   |_ BitwiseOperation
+            |   |   |_ BWNot ~
+            |   |   |_ BWXor ^
+            |   |   |_ BWOr |
+            |   |   |_ BWAnd &
+            |   |   |_ BitShift
+            |   |       |_ BitShiftLeft <<
+            |   |       |_ BitShiftRight >>
+            |   |_ LogicalOperation
+            |   |   |_ LNot !exp
+            |   |   |_ LEqual ==, lehet negálni: !=
+            |   |   |_ LStrictEqual ===, lehet negálni: !==
+            |   |   |_ LLowerThan <
+            |   |   |_ LGreatherThan >
+            |   |   |_ LLowerEqual <=
+            |   |   |_ LGreaterEqual >=
+            |   |_ FunctionCall a(args...)
+            |   |   |_ MethodCall this.a(args...)
+            |   |   |_ Super super(args..)
+            |   |_ MemberAccess a.b
+            |   |_ ObjectInit {x:1, ...}
+            |   |_ ArrayInit [1,2,3,..]
+            |   |_ Conditional expr ? expr : expr
+            |_ Declaration
+            |   |_ Package
+            |   |_ Class
+            |   |_ Interface
+            |   |_ Function
+            |   |   |_ Method
+            |   |_ Variable
+            |       |_ Property
+            |_ Statement
+            |   |_ If
+            |   |_ For
+            |   |_ ForIn
+            |   |_ ForEach
+            |   |_ While
+            |   |_ DoWhile
+            |   |_ With
+            |   |_ Switch
+            |   |_ SwitchCase
+            |   |_ SwitchDefault
+            |   |_ Throw
+            |   |_ TryCatch
+            |   |   |_ TryCatchFinally
+            |   |_ Catch
+            |   |_ Break
+            |   |_ Continue
+            |   |_ Return
+            |_ MetaTag [Event(name="test", type="events.Event")]
+            |_ CodeBlock ami a {} zárójelek között van
+            |_ ExpressionBlock Több kifejezést tartalmaz pl.: az IfStatement feltétele stb...
+            |_ Identifier
+			|_ Attribute (public, protected, private, internal, static, namespace, dynamic, final, native, override, get, set)
+
+	pl.:
+		class IntLiteral(NumberLiteral):
+			def __init__(self, value=0):
+				self.value = value
+
+			@classmethod
+			def createFromTokenStream(cls, stream, childs=None):
+				tok = stream.nextToken()
+				if tok.type & (TParser.T_LITERAL | TParser.T_INT):
+					return IntLiteral(tok.value)
+				return null
+
+		# register object and start token
+		ScriptElement.registerClass(IntLiteral, TParser.L_INT)
+		ScriptElement.registerClass(Add, TParser.L_NUMBER | TParser.T_IDENTIFIER, createStart=True)
+		ScriptElement.registerClass(Identifier, TParser.T_IDENTIFIER)
+		valami prioritási sorrendet majd fel kell állítani ezekből az adatokból
+
+		x + 3
+		id = Identifier.createFromTokenStream(stream)
+		add = Add.createFromTokenStream(stream, [id])
+				tok = stream.nextToken()
+				if tok.type & (TParser.T_OPERATOR | TParser.O_ADD):
+					left = childs[0]
+					right = ScriptElement.createFromTokenStream(stream)
+					return Add(left, right)
+				return null // ha null-al tér vissza visszaállítja a streamet a kezdetekhez
+
+
+Complex modulok/csomagok támogatása (több osztály csomagolva 1 fájlba)
+======================================================================
+Összecsomagolni zip-pel az összes fájlt + mellérakni egy leíró xml-t fájlt
++ minden osztály codeintel fájlját
+
+Factory for building source tree:
+=================================
+
+	struct Factory_ScriptElement
+	{
+		SmallInt type;
+		Int stype;
+		Factory_ScriptElement();
+		~Factory_ScriptElement();
+
+		ScriptElement* create(SourceTree* tree, Token* token, deque<Token*> &behind);
+	}
+
+	#define _SRC_TREE_NODE_FACTORY_BEGIN(type, stype, after)
+	#define _SRC_TREE_NODE_FACTORY_END
+	#define _SRC_TREE_NODE_FACTORY_RETURN_SKIP
+	#define _SRC_TREE_NODE_FACTORY_RETURN_NONE
+	#define _SRC_TREE_NODE_FACTORY_RETURN_NODE
+
+
+	_SRC_TREE_NODE_FACTORY_BEGIN(T_ATTRIBUTE, 0, standAlone=false)
+		ScriptElement* node = new Visibility(token.type);
+		return SourceTree.createNode(parser, _SRC_TOKEN_BEHIND(behind, node))
+	_SRC_TREE_NODE_FACTORY_END
+
+	_SRC_TREE_NODE_FACTORY_BEGIN(T_DEFINITION, KW_FUNCTION, standAlone=true)
+
+		if( tree.currentContext().type() & (CTX_CLASS | CTX_PACKAGE) )
+		{
+			ScriptElement* node = new Method()
+			node.context = new MethodContext(tree.currentContext());
+			// get attributes from behind and set on node
+		}
+		else
+		{
+			// attributes not allowed here...
+			ScriptElement* node = new Function()
+			node.context = new FunctionContext(tree.currentContext());
+		}
+
+		node.body = tree.createNode(_SRC_TOKEN_BEHIND(behind, node), node.context);
+
+		return node;
+
+	_SRC_TREE_NODE_FACTORY_END
+
+	3 + 4
+
+	nextToken()[match L_INT] -> factoryInt.create() -> nextToken()[match O_ADD] -> factoryAdd.create()
+
+	flow:
+		tree = new SourceTree(parser)
+		tree->create();
+			|-> behind = new deque<Token*>();
+			|-> context = new TopLevelContext()
+			|-> root = this._createCompilationUnit(behind, context);
+				|-> node = new CompilationUnit();
+				|-> node.context = new TopLevelContext();
+				|-> child = this.createNode(_SRC_TOKEN_BEHIND(behind, node), node.context);
+					|-> this.context = context;
+					|-> tok = this.parser.nextToken()
+					|-> if( tok )
+					|-> while( true )
+					|-> factory = this.findFactory(tok);
+					|-> if( factory == NULL ) throw error();
+					|-> node = factory.create(this, tok, behind)
+					|-> if( node ) if(factory.standAlone) return node; else this.createNode(_SRC_TOKEN_BEHIND(behind, node), node.context);
+				|-> if( child.type() == KW_PACKAGE ) node.addPackage(child);

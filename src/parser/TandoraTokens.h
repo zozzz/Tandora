@@ -9,13 +9,9 @@
 #define	TANDORATOKENS_H
 
 #include "../global.h"
+#include "Token.h"
 
 _TANDORA_NS_BEGIN
-
-#define _TOKEN_CHAR_MAP_BEGIN(name)
-#define _TOKEN_CHAR_MAP_END
-#define _TOKEN_CHAR_MAP_ENTRY(char_ptr, value)
-#define TCM_FIND(char_ptr, def)
 
 //------------------------------------------------------------------------------
 // TOKEN MAIN TYPES
@@ -49,7 +45,7 @@ _TANDORA_NS_BEGIN
 #define KW_ELSE			0x00020
 #define KW_FOR			0x00040
 #define KW_IN			0x00080
-#define KW_EACH			0x00100
+#define KW_FOREACH		0x00100
 #define KW_IF			0x00200
 #define KW_RETURN		0x00400
 #define KW_SUPER		0x00800
@@ -71,19 +67,19 @@ _TANDORA_NS_BEGIN
 #define KW_PROTECTED	0x040
 #define KW_PUBLIC		0x080
 #define KW_STATIC		0x100
+#define KW_GET			0x200
+#define KW_SET			0x400
 
 // definition
 #define KW_CLASS		0x001
 #define KW_CONST		0x002
 #define KW_EXTENDS		0x004
 #define KW_FUNCTION		0x008
-#define KW_GET			0x010
-#define KW_SET			0x020
-#define KW_IMPLEMENTS	0x040
-#define KW_INTERFACE	0x080
-#define KW_NAMESPACE	0x100
-#define KW_PACKAGE		0x200
-#define KW_VAR			0x400
+#define KW_IMPLEMENTS	0x010
+#define KW_INTERFACE	0x020
+#define KW_NAMESPACE	0x040
+#define KW_PACKAGE		0x080
+#define KW_VAR			0x100
 
 // other
 #define KW_IMPORT		0x001

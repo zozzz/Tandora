@@ -12,6 +12,11 @@
 
 _TANDORA_NS_BEGIN
 
+#define _TOKEN_CHAR_MAP_BEGIN(name)
+#define _TOKEN_CHAR_MAP_END
+#define _TOKEN_CHAR_MAP_ENTRY(char_ptr, value)
+#define TCM_FIND(char_ptr, def)
+
 struct Token
 {
 	Token(SmallInt _type, Int _stype, SmallInt _line, SmallInt _col):
