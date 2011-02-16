@@ -8,7 +8,7 @@
 #ifndef TANDORATOKENS_H
 #define	TANDORATOKENS_H
 
-#include "../global..h"
+#include "../global.h"
 
 _TANDORA_NS_BEGIN
 
@@ -261,4 +261,3 @@ _TOKEN_CHAR_MAP_END
 _TANDORA_NS_END
 
 #endif	/* TANDORATOKENS_H */
-

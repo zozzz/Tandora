@@ -8,7 +8,7 @@
 #ifndef TANDORAPARSER_H
 #define	TANDORAPARSER_H
 
-#include "../global..h"
+#include "../global.h"
 #include "Token.h"
 #include "TandoraTokens.h"
 
@@ -33,4 +33,3 @@ private:
 _TANDORA_NS_END
 
 #endif	/* TANDORAPARSER_H */
-

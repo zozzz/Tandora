@@ -1,5 +1,5 @@
 #include <iostream>
-#include "global..h"
+#include "global.h"
 #include "parser/Token.h"
 #include "parser/TandoraTokens.h"
 #include "parser/TandoraParser.h"

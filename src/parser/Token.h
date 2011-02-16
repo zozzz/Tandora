@@ -8,7 +8,7 @@
 #ifndef TOKEN_H
 #define TOKEN_H
 
-#include "../global..h"
+#include "../global.h"
 
 _TANDORA_NS_BEGIN
 
