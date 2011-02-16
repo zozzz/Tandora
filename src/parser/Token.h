@@ -5,8 +5,8 @@
  *      Author: Zozzz
  */
 
-#ifndef _TOKEN_H_2011_Zozzz_
-#define _TOKEN_H_2011_Zozzz_
+#ifndef TOKEN_H
+#define TOKEN_H
 
 #include "../global..h"
 
@@ -75,4 +75,4 @@ protected:
 
 _TANDORA_NS_END
 
-#endif /* _TOKEN_H_2011_Zozzz_ */
+#endif /* TOKEN_H */
