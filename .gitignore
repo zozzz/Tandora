@@ -3,3 +3,8 @@ Release
 .settings
 .project
 .cproject
+nbproject
+/build/
+/dist/
+/Makefile
+/.dep.inc

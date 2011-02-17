@@ -9,6 +9,8 @@
 #define _GLOBAL__H_2011_Zozzz_
 
 #include "settings.h"
+#include "common/utf8.h"
+#include "common/File.h"
 #include <iostream>
 
 #define _TANDORA_NS_BEGIN namespace tandora{
