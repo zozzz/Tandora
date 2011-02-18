@@ -8,6 +8,13 @@
 #ifndef _SETTINGS_H_2011_Zozzz_
 #define _SETTINGS_H_2011_Zozzz_
 
+/** 
+ * possible compile definitions:
+ *      __DEBUG__
+ *      __UNITTEST__
+ *      __PERFTEST__
+ */
+
 #define _TOKEN_ITERATOR_HISTORY_SIZE 5
 
 // in bytes, possible values: 2, 4
