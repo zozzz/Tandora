@@ -12,7 +12,6 @@ namespace common
 
 	File::File(const char* file, Mode mode): _file(NULL)
 	{
-		std::cout << file << std::endl;
 		open(file, mode);
 	}
 

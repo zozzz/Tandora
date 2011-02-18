@@ -11,7 +11,6 @@
 
 #include "../global.h"
 
-#include <deque>
 #include "File.h"
 
 #ifdef __DEBUG__
@@ -22,39 +21,54 @@
 namespace common{ namespace utf8
 {
 
-	// utf-8 char
-	typedef unsigned int uchar;
+	#if _UNICODE_CHAR_SIZE == 2
+		typedef unsigned short int uchar;
+		#define _UCHAR_MAX 65535
+	#elif _UNICODE_CHAR_SIZE == 4
+		typedef unsigned int uchar;
+		#define _UCHAR_MAX 2097152
+	#else
+		#warning "Not supported unicode char size"
+		#define _UCHAR_MAX 0
+	#endif
 
-	// uchar header base
-	#define _UCHB_OCT1 0
-	#define _UCHB_OCT2 0xC0
-	#define _UCHB_OCT3 0xE0
-	#define _UCHB_OCT4 0xF0
+	namespace __
+	{
+		struct ConvResult
+		{
+			size_t length;
+			uchar* data;
+		};
 
-	// uchar flow base
-	#define _UCFB 0x80
+		struct UnicodeConverter
+		{
+			uchar* _storage;
 
-	// uchar size
-	#define _UCSL_1 0x80
-	#define _UCSL_2 0x800
-	#define _UCSL_3 0x10000
+			UnicodeConverter(const char* ch);
+			~UnicodeConverter();
 
-	// NULL karakter
-	#define UCT_NULL	0
-	// ASCII 7 bites karakter
-	#define UCT_ASCII	1
-	// Többájtos karakterszekvencia kezdete
-	#define UCT_HEAD	2
-	// többájtos karakterszekvencia folytatása
-	#define UCT_FLOW	4
 
-	#define DETERMINE_UCT(chunk) (((chunk) == 0) ? UCT_NULL :\
-		(((chunk) & 0x80) != 0x80 ? UCT_ASCII :\
-		(((chunk) & 0x40) != 0x40 ? UCT_FLOW : UCT_HEAD)))
+			operator uchar();
+			operator uchar*();
 
-	#define DETERMINE_UTF_SIZE_FROM_HEAD(head) (((head) & _UCHB_OCT4) == _UCHB_OCT4 ? 4 :\
-		(((head) & _UCHB_OCT3) == _UCHB_OCT3 ? 3 :\
-		(((head) & _UCHB_OCT2) == _UCHB_OCT2 ? 2 : 1)))
+			operator ConvResult();
+		};
+
+	}
+
+	#ifdef u
+		#warning "common::utf8 -> 'u' is previously defined, please do not use!"
+	#else
+		#define u (common::utf8::__::UnicodeConverter)
+	#endif
+
+	/*
+	 std::cout << bitset<8>((ch) >> 24) << " " << \
+				bitset<8>((ch) >> 16) << " " << \
+				bitset<8>((ch) >> 8) << " " << \
+				bitset<8>((ch)) << std::endl; std::cout.unsetf(std::ios::hex | std::ios::uppercase);
+
+	 */
 
 	#ifdef __DEBUG__
 		#define _DUMP_UCHAR(ch) std::cout << ((common::utf8::uchar)(ch)) << " | "; \
@@ -63,36 +77,62 @@ namespace common{ namespace utf8
 				std::cout << (common::utf8::uchar)(ch) << " | "; \
 				std::cout.unsetf(std::ios::showbase); \
 				std::cout.unsetf(std::ios::hex); \
-				std::cout << bitset<8>((ch) >> 24) << " " << \
-				bitset<8>((ch) >> 16) << " " << \
-				bitset<8>((ch) >> 8) << " " << \
-				bitset<8>((ch)) << std::endl; std::cout.unsetf(std::ios::hex | std::ios::uppercase);
+				std::cout << std::bitset<8>((ch) >> 24) << " " << \
+				std::bitset<8>((ch) >> 16) << " " << \
+				std::bitset<8>((ch) >> 8) << " " << \
+				std::bitset<8>((ch)) << std::endl; std::cout.unsetf(std::ios::hex | std::ios::uppercase);
 	#else
 		#define _DUMP_UCHAR(uchar)
 	#endif
 
 
-	class ustring: public std::deque<uchar*>
+	class ustring
 	{
 	public:
-		ustring(const char* str);
-		ustring(char str);
+		ustring();
+		ustring(const char* ch);
+		~ustring();
 
-		operator const char*(){};
+		// operators: +, []
 
-		ustring operator + (const ustring& str){};
-		ustring operator + (const uchar& str){};
-		ustring operator + (const char& str){};
-
-		void slice(int start, int end = 0);
-		void append(ustring* str);
-		void append(uchar ch);
-		void append(const char* str);
-		void append(char ch);
+	protected:
+		uchar* _storage;
 	};
+
+
+	class FileIO
+	{
+	public:
+		FileIO();
+		FileIO(const char* file);
+		~FileIO();
+
+		bool open(const char* file);
+		uchar readc();
+		uchar* read();
+
+		//size_t writec(const uchar ch);
+		size_t write(const uchar* ch, size_t length = 0);
+
+	private:
+		/*typedef unsigned char buffer_t;
+
+		buffer_t* _buffer;
+		*/
+		uchar* _buffer;
+		File* _file;
+		size_t _position;
+		size_t _length;
+
+		void _readAllContentToBuffer();
+	};
+
+
+
 
 	// TODO: megnézni mi a különbség sebességben a file open módokban: rb, ab+
 
+	/*
 	class FileStream
 	{
 	public:
@@ -141,6 +181,7 @@ namespace common{ namespace utf8
 	protected:
 		virtual bool _open(const char* file);
 	};
+	 * */
 }}
 
 #endif	/* UTF8_H */

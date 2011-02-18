@@ -11,7 +11,7 @@
 #include "settings.h"
 #include "common/utf8.h"
 #include "common/File.h"
-#include <iostream>
+#include "common/Exception.h"
 
 #define _TANDORA_NS_BEGIN namespace tandora{
 #define _TANDORA_NS_END }
