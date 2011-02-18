@@ -132,11 +132,11 @@ namespace common{ namespace utf8
 		virtual bool _open(const char* file);
 	};
 
-	class FileIO: public FileInputStream, public FileOutputStream
+	class FileIO:
 	{
 	public:
-		FileIO(): FileInputStream(){};
-		FileIO(const char* file): FileInputStream(file){};
+		FileIO(): {};
+		FileIO(const char* file): {};
 
 	protected:
 		virtual bool _open(const char* file);
@@ -144,4 +144,3 @@ namespace common{ namespace utf8
 }}
 
 #endif	/* UTF8_H */
-

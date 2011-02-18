@@ -342,12 +342,12 @@ Factory for building source tree:
 	#define _SRC_TREE_NODE_FACTORY_RETURN_NODE
 
 
-	_SRC_TREE_NODE_FACTORY_BEGIN(T_ATTRIBUTE, 0, standAlone=false)
-		ScriptElement* node = new Visibility(token.type);
+	_SRC_TREE_NODE_FACTORY_BEGIN(T_ATTRIBUTE, 0)
+		ScriptElement* node = new Attribute(token.type);
 		return SourceTree.createNode(parser, _SRC_TOKEN_BEHIND(behind, node))
 	_SRC_TREE_NODE_FACTORY_END
 
-	_SRC_TREE_NODE_FACTORY_BEGIN(T_DEFINITION, KW_FUNCTION, standAlone=true)
+	_SRC_TREE_NODE_FACTORY_BEGIN(T_DEFINITION, KW_FUNCTION)
 
 		if( tree.currentContext().type() & (CTX_CLASS | CTX_PACKAGE) )
 		{
@@ -370,7 +370,7 @@ Factory for building source tree:
 
 	3 + 4
 
-	nextToken()[match L_INT] -> factoryInt.create() -> nextToken()[match O_ADD] -> factoryAdd.create()
+	nextToken()[match L_INT] -> factoryInt.create() -> nextToken()[match O_ADD] -> factoryAdd.create() -> nextToken()[match L_INT] -> factoryInt.create()
 
 	flow:
 		tree = new SourceTree(parser)
@@ -388,5 +388,5 @@ Factory for building source tree:
 					|-> factory = this.findFactory(tok);
 					|-> if( factory == NULL ) throw error();
 					|-> node = factory.create(this, tok, behind)
-					|-> if( node ) if(factory.standAlone) return node; else this.createNode(_SRC_TOKEN_BEHIND(behind, node), node.context);
+					|-> if( node ) return node;
 				|-> if( child.type() == KW_PACKAGE ) node.addPackage(child);
