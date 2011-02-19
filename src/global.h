@@ -9,13 +9,19 @@
 #define _GLOBAL__H_2011_Zozzz_
 
 #include "settings.h"
-#include "common/utf8.h"
+#include <inttypes.h>
 #include "common/File.h"
-#include "common/Exception.h"
+
 
 #define _TANDORA_NS_BEGIN namespace tandora{
 #define _TANDORA_NS_END }
 #define _WAIT_FOR_KEYP char __wfkp__t; std::cout << "\nPress any key to continue... "; std::cin >> __wfkp__t;
+
+// 10 MB
+#define _MAX_ALLOWED_FILE_SIZE 0xA00000
+
+// TODO: error...
+#define ALLOC_ARRAY(var, type, size) {var = new type [size]; if( var == NULL ) {  }}
 
 _TANDORA_NS_BEGIN
 

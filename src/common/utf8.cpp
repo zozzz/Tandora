@@ -86,6 +86,7 @@ namespace common { namespace utf8 {
 }}
  **/
 
+/*
 #include "utf8.h"
 #include <string.h>
 
@@ -201,15 +202,8 @@ namespace common{ namespace utf8 {
 	#define INIT_UCHAR_FROM_HEAD(head, length) ( UTF_CHUNK_##length( (head) & _UCHB_OCT_##length##_N ) )
 	#define APPEND_FBYTE_TO_UCHAR(byte, pos) ( UTF_CHUNK_##pos( (byte) & _UCHB_OCT_##pos##_N ) )
 
-        
-        /**
-         * TODO:
-         * 
-         * alapból a belső bufferbe olvassa be a fájlt, 1x végigmegyek rajta
-         * és átalakítom a 2/4 byteos unicode szekvenciát karakterkóddá
-         * és felülírom a buffer adott részét, így nincs copy
-         * 
-         */
+
+
 	void FileIO::_readAllContentToBuffer()
 	{
 		size_t size = _file->size();
@@ -325,3 +319,4 @@ namespace common{ namespace utf8 {
 	}
 
 }}
+*/

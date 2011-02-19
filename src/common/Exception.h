@@ -129,9 +129,9 @@ namespace common
 	 * */
 
 /*
- 
+
  NEW PLAN
- 
+
 class Exception
 {
 public:
@@ -150,9 +150,9 @@ public:
 		size_t length = strlen(_fn);
 		length += strlen(_file);
 		length += strlen(_msg);
-		
+
 		// sprintf
-	}	
+	}
 
 protected:
 	//static std::deque<Exception> _stack;
@@ -186,9 +186,97 @@ _EX_DECL(UnicodeError)
 
 	_EX_MSG(InvalidCharacter, "Invalid char")
 
-_EX_END 
- 
+_EX_END
+
 */
-        
+
+#include <map>
+#include <deque>
+
+namespace common
+{
+	namespace __
+	{
+		struct EX_CallStackItem
+		{
+			const char* func;
+			const char* file;
+			const int line;
+
+			EX_CallStackItem(const char* _func, const char* _file, const int _line):
+				func(_func),
+				file(_file),
+				line(_line) { };
+		};
+	}
+
+	class Exception
+	{
+	public:
+		const char* func;
+		const char* file;
+		const char* msg;
+
+		const int line;
+
+		Exception(const char* _fn, const char* _file, const int _line, const char* _msg):
+			func(_fn),
+			file(_file),
+			line(_line),
+			msg(_msg)
+		{
+			_addStack(_fn, _file, _line);
+		}
+
+		operator char*()
+		{
+			// sprintf
+			return NULL;
+		}
+
+		static void _addStack(const char* _fn, const char* _file, const int _line)
+		{
+			//_stack.push_back(new __::EX_CallStackItem(_fn, _file, _line));
+		}
+
+		static void _clearStack(){ _stack.clear(); }
+
+	protected:
+		static std::map<char*, int> _msgId;
+
+	public:
+		static std::deque<__::EX_CallStackItem*> _stack;
+
+		char* formatMsg(const char* msg, ...)
+		{
+		}
+	};
+
+}
+
+#define _EX_DECL(name) class name : public common::Exception { \
+	private: \
+		typedef name _self; \
+	public: \
+		name (const char* _fn, const char* _file, const int _line, const char* _msg): \
+		common::Exception(_fn, _file, _line, _msg){}
+
+#define _EX_DECL_END };
+#define _EX_DECL_ERR(name, msg) class name { \
+	static void _throw (const char* _fn, const char* _file, const int _line){ throw new _self(_fn, _file, _line, #msg); } };
+
+#define ex_try try
+#define ex_catch(x) catch( x EX )
+#define ex_final finally
+#define ex_rethrow common::Exception::_addStack(__FUNCTION__, __FILE__, __LINE__); throw EX;
+#define ex_rethrowc catch( Exception EX ){ ex_rethrow }
+#define ex_throw(ex) ex ::_throw(__FUNCTION__, __FILE__, __LINE__)
+
+_EX_DECL(IOError)
+
+	_EX_DECL_ERR(FileNotFound, "File not found: %s")
+
+_EX_DECL_END
+
 #endif	/* EXCEPTION_H */
 

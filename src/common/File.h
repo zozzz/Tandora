@@ -8,8 +8,9 @@
 #ifndef FILE_H
 #define	FILE_H
 
+#include "../global.h"
 #include <stdio.h>
-#include <inttypes.h>
+#include "unicode.h"
 
 namespace common
 {
@@ -19,47 +20,94 @@ namespace common
 		typedef enum
 		{
 			READ = 0,
-			WRITE,
-			APPEND,
-			READ_WRITE,
-			READ_BINARY,
-			WRITE_BINARY,
-			APPEND_BINARY,
-			READ_APPEND_BINARY
+			WRITE = 1,
+			APPEND = 2
 		} Mode;
 
-		File();
+		typedef enum
+		{
+			DEFAULT = 0,
+			UTF_8 = 1
+		} Encoding;
 
-		File(const char* file, Mode mode);
+		File(const char* file, Mode mode = APPEND, Encoding enc = DEFAULT, bool readAllContent = true);
 
 		~File();
 
-		bool open(const char* file, Mode mode);
-
-		void close();
-
-		int readc();
+		unicode::uchar readc();
 
 		size_t read(void* buffer, size_t bytesToRead);
 
-		bool writec(int ch);
+		bool writec(unsigned int ch);
 
-		size_t write(const void* buffer, size_t bytesToWrite);
+		size_t write(const void* buffer, size_t charsToWrite);
 
-		int64_t tell() const;
+		long int tell() const;
 
-		bool seek(int64_t pos, int whence);
+		bool seek(long int offset, int origin);
 
-		int64_t size() const;
+		inline long int size()
+		{
+			if( _size == 0 )
+			{
+				fseek(_file, 0, SEEK_END);
+				_size = ftell(_file);
+				fseek(_file, 0, SEEK_SET);
+			}
 
-		bool eof() const;
+			return _size;
+		};
 
-		bool exists() const;
+		inline bool eof() const { return feof(_file) == EOF; };
+
+		inline bool exists() const { return _exists; };
 
 	private:
-		bool _exists;
-		FILE* _file;
 		static const char* _fileModes[];
+
+		/**
+		 * Read all content from file when open
+		 */
+		bool _rac;
+
+		/**
+		 * Truw when file is successfully opened
+		 */
+		bool _exists;
+
+		/**
+		 * File pointer
+		 */
+		FILE* _file;
+
+		/**
+		 * Encoding
+		 */
+		Encoding _enc;
+
+		/**
+		 * Size in bytes
+		 */
+		long int _size;
+
+		/**
+		 * Length in chars
+		 */
+		long int _length;
+
+		/**
+		 * Current position in buffer
+		 */
+		long int _position;
+
+		/**
+		 * Internal buffer for unicode chars
+		 */
+		unicode::uchar* _buffer;
+
+
+		void _readToBuffer();
+		void _convertBufferToUTF8();
 	};
 }
 
