@@ -17,6 +17,9 @@ namespace common
 	class File
 	{
 	public:
+		static const char* formatSize(size_t size);
+
+	public:
 		typedef enum
 		{
 			READ = 0,
@@ -30,7 +33,7 @@ namespace common
 			UTF_8 = 1
 		} Encoding;
 
-		File(const char* file, Mode mode = APPEND, Encoding enc = DEFAULT, bool readAllContent = true);
+		File(const char* file, Mode mode = READ, Encoding enc = DEFAULT, bool readAllContent = true);
 
 		~File();
 
@@ -58,6 +61,8 @@ namespace common
 			return _size;
 		};
 
+		inline long int length(){ return _length; };
+
 		inline bool eof() const { return feof(_file) == EOF; };
 
 		inline bool exists() const { return _exists; };
@@ -79,6 +84,11 @@ namespace common
 		 * File pointer
 		 */
 		FILE* _file;
+
+		/**
+		 * File full path
+		 */
+		const char* _fileName;
 
 		/**
 		 * Encoding
@@ -107,7 +117,7 @@ namespace common
 
 
 		void _readToBuffer();
-		void _convertBufferToUTF8();
+		void _convertBufferToUTF8(unsigned char* buffer);
 	};
 }
 

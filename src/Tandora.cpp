@@ -4,8 +4,13 @@
 #include "parser/TandoraTokens.h"
 #include "parser/TandoraParser.h"
 #include <bitset>
+#include <string.h>
 #include "common/Timer.h"
 #include "Application.h"
+#include "common/Exception.h"
+#include <stdio.h>
+#include <stdarg.h>
+#include "common/File.h"
 //#include "common/Exception.h"
 
 #define _ROOT "D:\\Works\\cpp\\Tandora\\"
@@ -13,7 +18,6 @@
 using namespace std;
 using namespace common;
 using namespace tandora;
-
 
 int main(int argc, char **argv)
 {
@@ -25,8 +29,10 @@ int main(int argc, char **argv)
 		// return PerformanceTest::run(argc, argv);
 	#endif
 
-	#ifndef __UNITTEST__ && __PERFTEST__
+	#ifndef __UNITTEST__
+	#ifndef __PERFTEST__
 		//return Application::run(argc, argv);
+	#endif
 	#endif
 
 	//_WAIT_FOR_KEYP
@@ -66,26 +72,57 @@ int main(int argc, char **argv)
 	cout << t1.last() << " | " << t1.last() / _IT_ << endl;
 	 * */
 
-	/*
-	File file(_ROOT"test\\utf8.txt");
+
+	//File file(_ROOT"test\\utf8.txt");
 
 	//cout << file.readc() << endl;
-	unicode::utf8c ch = file.readc();
 
-	_DUMP_UCHAR(ch);
-	 * */
+	/*for(int i=0 ; i<3 ; i++)
+	{
+		unicode::utf8c ch = file.readc();
+
+		_DUMP_UCHAR(ch);
+	}*/
+
+
+
+	//ALLOC_ARRAY(_buff, char, 100);
+
+
+
+	ex_try
+	{
+
+
+
+
 
 	#define _IT_ 100
 
 	Timer t1;
 
 	for(int i= 0 ; i<_IT_ ; i++)
-		File fio(_ROOT"test\\UIComponent.as");
+	{
+		File fio(_ROOT"test\\UIComponent.as", File::READ, File::UTF_8, true);
+		//cout << fio.length() << endl;
+	}
+
+		//using namespace unicode;
+
+	//uchar uch = fio.readc();
+	//_DUMP_UCHAR(uch);
+
+
 
 	t1.stop();
 	cout << t1.last() << " | " << t1.last() / _IT_ << endl;
 
 
+	}
+	ex_catch( Exception ex )
+	{
+		cout << ex.what() << endl;
+	}
 
 	return 0;
 }

@@ -9,8 +9,8 @@
 #define _GLOBAL__H_2011_Zozzz_
 
 #include "settings.h"
-#include <inttypes.h>
-#include "common/File.h"
+#include <stdint.h>
+#include <stdlib.h>
 
 
 #define _TANDORA_NS_BEGIN namespace tandora{
@@ -20,8 +20,9 @@
 // 10 MB
 #define _MAX_ALLOWED_FILE_SIZE 0xA00000
 
-// TODO: error...
-#define ALLOC_ARRAY(var, type, size) {var = new type [size]; if( var == NULL ) {  }}
+#define ALLOC_ARRAY(var, type, size) {var = (type *) malloc(sizeof(type) * (size)); if( var == NULL ) { ex_throw(common::MemoryError::NotEnough, sizeof(type) * (size)); }}
+#define RESIZE_ARRAY(var, type, size) { var = (type *) realloc(var, sizeof(type) * (size)); if( var == NULL ) { ex_throw(common::MemoryError::NotEnough, sizeof(type) * (size)); } }
+#define FREE_ARRAY(var) free(var)
 
 _TANDORA_NS_BEGIN
 
