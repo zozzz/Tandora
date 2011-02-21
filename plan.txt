@@ -177,6 +177,24 @@ A nyelv alapja az ActionScript 3, az ettől eltérő módosítások felsorolása
             // ide pedig a fügvény törzse
     }
 
+- Setter/Getter:
+
+	dynamic var test:String
+	{
+		public set
+		{
+		}
+
+		mx_internal get
+		{
+		}
+	}
+
+- Array/Map értékek tipusának egyszerű támogatása + változó inicializálás:
+	var array:String["test", "test2"]; // string array létrehozása + inicializálás
+	var map:DisplayObject{}; // DisplayObject map létrehozása, nem égényel külön inicializációt
+	var btn:Button(label="Bezárás"); //
+
 
 Fordító felépítése:
 =================================
@@ -393,4 +411,3 @@ Factory for building source tree:
 
 UnitTest FMW
 ============================================================
-

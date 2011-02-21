@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include "common/File.h"
+#include "common/debug/debug.h"
 //#include "common/Exception.h"
 
 #define _ROOT "D:\\Works\\cpp\\Tandora\\"
@@ -89,12 +90,17 @@ int main(int argc, char **argv)
 	//ALLOC_ARRAY(_buff, char, 100);
 
 
-
+	//( false ? cout << "True" << endl : cout << "False" << endl );
+	
+	
+	
+	
 	ex_try
 	{
 
 
 
+	
 
 
 	#define _IT_ 100
