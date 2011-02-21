@@ -5,14 +5,13 @@
  * Created on 2011. február 17., 21:09
  */
 
-#ifndef EXCEPTION_H
-#define	EXCEPTION_H
-
-#include "../global.h"
 #include <stdarg.h>
 #include <map>
 #include <deque>
 #include <exception>
+
+#ifndef EXCEPTION_H
+#define	EXCEPTION_H
 
 namespace common
 {
@@ -112,6 +111,7 @@ namespace common
 	_EX_DECL_END
 
 	_EX_DECL_MSG(ValueError, OutOfRange, "The specified value is out of range (%d - %d): %d")
+
 
 	//------------------------------------------------------------------------------
 	// MemoryError

@@ -1,10 +1,14 @@
 
-#include "File.h"
+
 #include <iostream>
 #include <math.h>
-#include "Exception.h"
 #include <errno.h>
 #include <string.h>
+
+#include "../global.h"
+#include "File.h"
+#include "Allocator.h"
+#include "Exception.h"
 
 namespace common
 {
@@ -89,51 +93,12 @@ namespace common
 		_length = 0;
 		ALLOC_ARRAY(_buffer, uchar, _size+1);
 
-		uchar ch;
+
 
 		if( _size > 2 && _UTF8_DETECT_BOM(buffer) ) // skip BOM
-			ch = *buffer += 3;
-		else
-			ch = *buffer++;
+			*buffer += 3;
 
 
-		short int ucharOctLength = 0;
-		do
-		{
-			if( _UTF8_OCT_IS_UTF8(ch) )
-			{
-				if( _UTF8_OCT_IS_HEAD(ch) )
-				{
-					ucharOctLength = _UTF8_GET_LENGTH_FROM_HEAD(ch);
-					_buffer[_length] = (ch & UTF8Converter::BM_HEADER[ucharOctLength]) << (6 * --ucharOctLength);
-
-				}
-				else
-				{
-					if( ucharOctLength == 0 )
-					{
-						ex_throw(UnicodeError::Malformed, ch, _length);
-					}
-
-					_buffer[_length] |= (ch & _BM_UTF8_FLOW) << (6 * --ucharOctLength);
-
-					if( ucharOctLength == 0 )
-						_length++;
-				}
-			}
-			else
-			{
-				_buffer[_length++] = ch;
-			}
-
-			ch = *buffer++;
-
-		}while( ch );
-
-		if( _length != _size )
-			RESIZE_ARRAY(_buffer, uchar, _length+1);
-
-		_buffer[_length] = '\0';
 	}
 
 	// TODO: unicode support + _buffer slice if _rac == true

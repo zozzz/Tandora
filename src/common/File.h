@@ -5,12 +5,11 @@
  * Created on 2011. február 16., 20:32
  */
 
-#ifndef FILE_H
-#define	FILE_H
-
-#include "../global.h"
 #include <stdio.h>
 #include "unicode.h"
+
+#ifndef FILE_H
+#define	FILE_H
 
 namespace common
 {

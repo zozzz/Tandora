@@ -1,5 +1,6 @@
 
 #include "Exception.h"
+#include "Allocator.h"
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>

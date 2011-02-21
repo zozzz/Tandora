@@ -5,20 +5,19 @@
 #include "parser/TandoraParser.h"
 #include <bitset>
 #include <string.h>
-#include "common/Timer.h"
 #include "Application.h"
-#include "common/Exception.h"
+
 #include <stdio.h>
 #include <stdarg.h>
-#include "common/File.h"
-#include "common/debug/debug.h"
-//#include "common/Exception.h"
+#include "common/common.h"
 
 #define _ROOT "D:\\Works\\cpp\\Tandora\\"
 
 using namespace std;
 using namespace common;
 using namespace tandora;
+
+struct XXX{ int z; };
 
 int main(int argc, char **argv)
 {
@@ -91,38 +90,13 @@ int main(int argc, char **argv)
 
 
 	//( false ? cout << "True" << endl : cout << "False" << endl );
-	
-	
-	
-	
+
+	//traceb(16);
+
+
 	ex_try
 	{
-
-
-
-	
-
-
-	#define _IT_ 100
-
-	Timer t1;
-
-	for(int i= 0 ; i<_IT_ ; i++)
-	{
-		File fio(_ROOT"test\\UIComponent.as", File::READ, File::UTF_8, true);
-		//cout << fio.length() << endl;
-	}
-
-		//using namespace unicode;
-
-	//uchar uch = fio.readc();
-	//_DUMP_UCHAR(uch);
-
-
-
-	t1.stop();
-	cout << t1.last() << " | " << t1.last() / _IT_ << endl;
-
+		
 
 	}
 	ex_catch( Exception ex )

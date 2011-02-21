@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   debug.h
  * Author: Zozzz
  *
@@ -15,21 +15,22 @@
 #include <string>
 #include <string.h>
 #include <math.h>
+#include <bitset>
 
 /*
 void __dbg_trace__(int line, const char* fn, ...)
 {
 	char* msg = new char[1000];
 	int pos;
-	
+
 	strcpy(msg, fn);
 	pos = strlen(fn);
 	strcpy(msg+pos, "(");
 	pos+= 2;
-	
+
 	int _lines = 1;
 	int _s = 10;
-	
+
 	for(;;)
 	{
 		if( line / _s < 1 )
@@ -37,7 +38,7 @@ void __dbg_trace__(int line, const char* fn, ...)
 		_lines++;
 		_s *= _s;
 	}
-	
+
 	std::cout << _lines << std::endl;
 	char* _line = new char[_lines+1];
 	_line[_lines] = '\0';
@@ -45,12 +46,12 @@ void __dbg_trace__(int line, const char* fn, ...)
 	strcpy(msg+(pos-1), _line);
 	pos += strlen(_line);
 	strcpy(msg+(pos-1), ") %s");
-	
-	
-	
+
+
+
 	//std::cout << str.c_str() << std::endl;
 	//char* msg = str.
-	
+
 	va_list args;
 	va_start(args, fn);
 
@@ -89,10 +90,16 @@ void __dbg_trace__(int line, const char* fn, ...)
 	}
 
 	va_end(args);
-	
+
 	std::cout << buffer << std::endl;
 }
  * */
+
+namespace common{ namespace debug {
+
+
+
+
 
 // DO NOT USE!
 #define _assert_(var1, op, var2, _break_) if( !((var1) op (var2)) ) { \
@@ -103,13 +110,18 @@ void __dbg_trace__(int line, const char* fn, ...)
 
 #define Assert(var1, op, var2) _assert_(var1, op, var2, false)
 #define AssertExit(var1, op, var2) _assert_(var1, op, var2, true)
-#define trace(var) std::cout << #var << " = " << (var) << std::endl;
+#define trace(var) std::cout << #var << " = " << (var) << std::endl
+// TODO: improve
+#define traceb(var) std::cout << #var << " = " << std::bitset<32>(var) << std::endl
 
 #else
 #define Assert(var1, op, var2)
 #define AssertExit(var1, op, var2)
 #define trace(var)
+#define traceb(var)
 #endif
+
+}}
 
 #endif	/* DEBUG_H */
 
