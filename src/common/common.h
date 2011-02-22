@@ -11,7 +11,6 @@
 #include "Allocator.h"
 #include "Exception.h"
 #include "File.h"
-#include "Timer.h"
 #include "unicode/unicode.h"
 
 #include "debug/debug.h"

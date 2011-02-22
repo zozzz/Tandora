@@ -10,14 +10,25 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include "common/common.h"
+#include <limits.h>
 
 #define _ROOT "D:\\Works\\cpp\\Tandora\\"
 
 using namespace std;
 using namespace common;
+using namespace common::unicode;
 using namespace tandora;
 
 struct XXX{ int z; };
+
+#pragma pack(push, 1)
+typedef struct
+{
+	unsigned int c;
+	unsigned char z;
+
+} zchar;
+#pragma pack(pop)
 
 int main(int argc, char **argv)
 {
@@ -94,10 +105,31 @@ int main(int argc, char **argv)
 	//traceb(16);
 
 
+
 	ex_try
 	{
-		
+		trace(sizeof(uchar));
 
+		#define _IT_ 10000
+		TIMER_N_START(uchar, _IT_)
+
+		uchar* zc = new uchar[2000];
+		delete[] zc;
+
+		TIMER_END(uchar)
+
+		TIMER_N_START(uint, _IT_)
+
+		unsigned int* ui = new unsigned int[2000];
+		delete[] ui;
+
+		TIMER_END(uint)
+
+		char ch = 200;
+
+		
+		unicode::Iterator* uit = new unicode::Internal::UTF8Iterator<char>("HelloWorld");
+		uit->begin();
 	}
 	ex_catch( Exception ex )
 	{

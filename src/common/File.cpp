@@ -89,12 +89,12 @@ namespace common
 
 	/**
 	 * PLAN:
-	 * 
+	 *
 	 * v1: egy bájtonként valamilyen ciklussal végigmegy
 	 * v2: egy bájtonként goto-val optimalizálva végigmegy
-     * 
+     *
      */
-	
+
 	// 858
 	void File::_convertBufferToUTF8(unsigned char* buffer)
 	{
@@ -126,7 +126,9 @@ namespace common
 		{
 
 		}
-
-		return 0;
+		uchar uch;
+		uch.length = 0;
+		uch.value = 0;
+		return uch;
 	}
 }

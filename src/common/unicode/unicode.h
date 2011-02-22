@@ -11,13 +11,16 @@
 #define	UNICODE_H
 
 #include "../Exception.h"
+#include "../Allocator.h"
 #include "../../settings.h"
+#include "../debug/debug.h"
+#include <stdio.h> // for SEEK_SET, SEEK_CUR, SEEK_END
 
 #define IS_ASCII_BYTE(byte) ( ((byte) & 0x7F) != 0 )
 
 #define _UNICODE_STRING_BUFFER_INIT_SIZE_IN_CHAR 250
 
-#if _WCHAR_T_DEFINED
+#ifdef _WCHAR_T_DEFINED
 	static const size_t _WCHAR_T_SIZE = sizeof(wchar_t);
 #else
 	#if !defined(_UNICODE_CHAR_MAX_SIZE) || _UNICODE_CHAR_MAX_SIZE == 2
@@ -31,29 +34,59 @@
 
 namespace common { namespace unicode
 {
-	
+
 	/*
-	 
+
 	 Hogyan használnám:
 	 * UnicodeString str = L"Árvíztűrőtükörfúrógép";
 	 * str += " XYZ";
-	 * 
+	 *
 	 * str.charAt(1) -> uchar;
-	 * 
+	 *
 	 * File fio("File");
 	 * UnicodeString* fc = fio.readAll();
 	 * UnicodeIterator uci = fio.iterator();
-	 * 
-	 
-	 
-	 
-	 
-	 
+	 *
+	 * UIterator* z = fio.iterator();
+	 * UIterator* x = utf8 L"Árvíz";
+	 * UString
+	 *
+
+
+
+
+
 	 */
-	
+
+	#pragma pack(push, 1)
+		typedef struct
+		{
+			typedef unsigned int ValueType;
+
+			/**
+			 * Decoded char code
+			 */
+			ValueType value;
+
+			/**
+			 * Encoded format length in byte
+			 */
+			unsigned char length;
+
+			bool operator == (int cmp) { return value == cmp; }
+			bool operator != (int cmp) { return value != cmp; }
+			bool operator >= (int cmp) { return value >= cmp; }
+			bool operator <= (int cmp) { return value <= cmp; }
+			bool operator >  (int cmp) { return value >  cmp; }
+			bool operator <  (int cmp) { return value <  cmp; }
+
+		} uchar;
+	#pragma pack(pop)
+
+	/*
 	#if !defined(_UNICODE_CHAR_MAX_SIZE) || _UNICODE_CHAR_MAX_SIZE == 2
 		#define _UNICODE_CHAR_MAX_SIZE 2
-		typedef unsigned short int uchar;		
+		typedef unsigned short int uchar;
 		#define _UTF8_MAX 65535
 	#elif _UNICODE_CHAR_MAX_SIZE == 4
 		typedef unsigned int uchar;
@@ -62,40 +95,96 @@ namespace common { namespace unicode
 		#error "Not supported unicode char size"
 		#define _UTF8_MAX 0
 	#endif
+	 */
 
 	/* need operator overloads for uchar */
 
-	#include "utf8.h"
 
 
-	class UnicodeString
+
+	//------------------------------------------------------------------------------
+	// Abstract class for UTF-8, UTF-16, etc.. strings
+	//------------------------------------------------------------------------------
+	class ustring
 	{
 	public:
-		typedef Allocator<uchar> Alloc;
+		//typedef Allocator<uchar> Alloc;
 
-		UnicodeString(size_t bufferSize = _UNICODE_STRING_BUFFER_INIT_SIZE_IN_CHAR);
-		UnicodeString(const char* buffer);
-		UnicodeString(const char* buffer, size_t length);
-		UnicodeString(const wchar_t* buffer);
-		UnicodeString(const wchar_t* buffer, size_t length);
+		ustring(size_t bufferSize = _UNICODE_STRING_BUFFER_INIT_SIZE_IN_CHAR);
+		ustring(uchar* ch, size_t bufferSize = _UNICODE_STRING_BUFFER_INIT_SIZE_IN_CHAR);
 
 	private:
-		Alloc _storage;
+		//Alloc _storage;
 	};
 
-	
-	class UnicodeIterator
+
+	//------------------------------------------------------------------------------
+	// Abstract class for UTF-8, UTF-16, etc.. iterators
+	//------------------------------------------------------------------------------
+	class Iterator
 	{
 	public:
-		UnicodeIterator();
-		
-		UnicodeIterator& begin();
-		UnicodeIterator& end();
-		
-		
+		typedef const uchar* Value;
+
+		Iterator():
+			_converted(NULL),
+			_convLength(0),
+			_position(0) {};
+
+		virtual ~Iterator()
+		{
+			if( _converted )
+				FREE_ARRAY(_converted);
+		};
+
+		void seek(int offset, int origin = SEEK_CUR)
+		{
+			switch( origin )
+			{
+				case SEEK_SET:
+				break;
+
+				case SEEK_CUR:
+				break;
+
+				case SEEK_END:
+				break;
+			}
+		}
+
+		Value begin()
+		{
+			_position = 0;
+			return current();
+		};
+
+		Value next()
+		{
+			++_position;
+			return current();
+		}
+
+		Value prev()
+		{
+			if( _position > 0 )
+			{
+				--_position;
+				return &_converted[_position];
+			}
+			return NULL;
+		}
+
+		virtual Value current() = 0;
+
+	protected:
+		uchar* _converted;
+		size_t _convLength;
+		size_t _position;
 	};
 
-	
+
+
+
 	/*
 	class UTF8String;
 
@@ -151,6 +240,8 @@ namespace common { namespace unicode
 	_EX_DECL_END
 
 	_EX_DECL_MSG(UnicodeError, Malformed, "Malformed character \\u%X at %d!")
+
+	#include "utf8.h"
 }}
 
 #ifdef __DEBUG__

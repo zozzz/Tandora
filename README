@@ -1,0 +1,12 @@
+Compiler settings
+====================
+	- gcc / g++ flags:
+		1) -funsigned-char: unsigned char by default
+	
+	- MSVC flags:
+		1) /J: unsigned char by default
+		
+	- preprocessor definitions:
+		1) __DEBUG__	: debug
+		2) __UNITTEST__	: unittest
+		3) __PERFTEST__	: performance test
