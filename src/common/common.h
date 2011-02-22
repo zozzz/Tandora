@@ -12,7 +12,7 @@
 #include "Exception.h"
 #include "File.h"
 #include "Timer.h"
-#include "unicode.h"
+#include "unicode/unicode.h"
 
 #include "debug/debug.h"
 #include "debug/UnitTest.h"

@@ -6,7 +6,7 @@
  */
 
 #include <stdio.h>
-#include "unicode.h"
+#include "unicode/unicode.h"
 
 #ifndef FILE_H
 #define	FILE_H

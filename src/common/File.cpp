@@ -5,7 +5,7 @@
 #include <errno.h>
 #include <string.h>
 
-#include "../global.h"
+#include "../settings.h"
 #include "File.h"
 #include "Allocator.h"
 #include "Exception.h"
@@ -87,10 +87,18 @@ namespace common
 		FREE_ARRAY(buffer);
 	}
 
+	/**
+	 * PLAN:
+	 * 
+	 * v1: egy bájtonként valamilyen ciklussal végigmegy
+	 * v2: egy bájtonként goto-val optimalizálva végigmegy
+     * 
+     */
+	
 	// 858
 	void File::_convertBufferToUTF8(unsigned char* buffer)
 	{
-		_length = 0;
+		/*_length = 0;
 		ALLOC_ARRAY(_buffer, uchar, _size+1);
 
 
@@ -98,7 +106,7 @@ namespace common
 		if( _size > 2 && _UTF8_DETECT_BOM(buffer) ) // skip BOM
 			*buffer += 3;
 
-
+		 * */
 	}
 
 	// TODO: unicode support + _buffer slice if _rac == true

@@ -5,60 +5,67 @@
  * Created on 2011. február 18., 22:35
  */
 
+// http://nccastaff.bournemouth.ac.uk/jmacey/RobTheBloke/www/cppdir/RandomStuff.htm
+
 #ifndef UNICODE_H
 #define	UNICODE_H
 
-#include "Exception.h"
+#include "../Exception.h"
+#include "../../settings.h"
 
-#define _UNICODE_STRING_INIT_BUFFER_SIZE_IN_CHAR 250
+#define IS_ASCII_BYTE(byte) ( ((byte) & 0x7F) != 0 )
+
+#define _UNICODE_STRING_BUFFER_INIT_SIZE_IN_CHAR 250
+
+#if _WCHAR_T_DEFINED
+	static const size_t _WCHAR_T_SIZE = sizeof(wchar_t);
+#else
+	#if !defined(_UNICODE_CHAR_MAX_SIZE) || _UNICODE_CHAR_MAX_SIZE == 2
+		typedef unsigned short int wchar_t;
+		static const size_t _WCHAR_T_SIZE = 2;
+	#else
+		typedef unsigned int wchar_t;
+		static const size_t _WCHAR_T_SIZE = 4;
+	#endif
+#endif
 
 namespace common { namespace unicode
 {
+	
+	/*
+	 
+	 Hogyan használnám:
+	 * UnicodeString str = L"Árvíztűrőtükörfúrógép";
+	 * str += " XYZ";
+	 * 
+	 * str.charAt(1) -> uchar;
+	 * 
+	 * File fio("File");
+	 * UnicodeString* fc = fio.readAll();
+	 * UnicodeIterator uci = fio.iterator();
+	 * 
+	 
+	 
+	 
+	 
+	 
+	 */
+	
 	#if !defined(_UNICODE_CHAR_MAX_SIZE) || _UNICODE_CHAR_MAX_SIZE == 2
 		#define _UNICODE_CHAR_MAX_SIZE 2
-		typedef unsigned short int uchar;
+		typedef unsigned short int uchar;		
 		#define _UTF8_MAX 65535
 	#elif _UNICODE_CHAR_MAX_SIZE == 4
 		typedef unsigned int uchar;
-		typedef uchar utf8c;
 		#define _UTF8_MAX 2097152
 	#else
 		#error "Not supported unicode char size"
 		#define _UTF8_MAX 0
 	#endif
 
-	#define _BM_UTF8_FLOW 0x3F
+	/* need operator overloads for uchar */
 
-	#define _UTF8_BM_HEAD_1 0x7F
-	#define _UTF8_BM_HEAD_2 0x1F
-	#define _UTF8_BM_HEAD_3 0x0F
-	#define _UTF8_BM_HEAD_4 0x07
-
-	#define _UTF8_OCT_NULL	0x1
-	#define _UTF8_OCT_HEAD	0x2
-	#define _UTF8_OCT_FLOW	0x4
-	#define _UTF8_OCT_ASCII	0x8
-
-	#define _UTF8_OCT_IS_UTF8(oct) ( ((oct) & 0x80) == 0x80 )
-	#define _UTF8_OCT_IS_HEAD(oct) ( ((oct) & 0xC0) == 0xC0 )
-	#define _UTF8_OCT_IS_ASCII(oct) ( ((oct) & 0x7F) != 0 )
-
-	#define _UTF8_DETERMINE_OCT_TYPE(oct) (\
-		((oct) & 0x80) == 0x80 ? ( ((oct) & 0xC0) == 0xC0 ? _UTF8_OCT_HEAD : _UTF8_OCT_FLOW ) : \
-		((oct) & 0x7F) != 0 ? _UTF8_OCT_ASCII : _UTF8_OCT_NULL)
-
-	#define _UTF8_BOM_0 0xEF
-	#define _UTF8_BOM_1 0xBB
-	#define _UTF8_BOM_2 0xBF
-	#define _UTF8_DETECT_BOM(buff) ((buff[0]) == _UTF8_BOM_0 && (buff[1]) == _UTF8_BOM_1 && (buff[2]) == _UTF8_BOM_2)
-
-	#define _UTF8_GET_LENGTH_FROM_HEAD(oct) ( oct < 0xE0 ? 2 : ( oct < 0xF0 ? 3 : 4) )
-
-	#ifdef U8
-		#warning "common::unicode -> 'U8' is previously defined, please do not use!"
-	#else
-		#define U8 (common::unicode::UTF8Converter)
-	#endif
+	#include "utf8.h"
 
 
 	class UnicodeString
@@ -66,7 +73,7 @@ namespace common { namespace unicode
 	public:
 		typedef Allocator<uchar> Alloc;
 
-		UnicodeString(size_t bufferSize = _UNICODE_STRING_INIT_BUFFER_SIZE_IN_CHAR);
+		UnicodeString(size_t bufferSize = _UNICODE_STRING_BUFFER_INIT_SIZE_IN_CHAR);
 		UnicodeString(const char* buffer);
 		UnicodeString(const char* buffer, size_t length);
 		UnicodeString(const wchar_t* buffer);
@@ -76,7 +83,19 @@ namespace common { namespace unicode
 		Alloc _storage;
 	};
 
+	
+	class UnicodeIterator
+	{
+	public:
+		UnicodeIterator();
+		
+		UnicodeIterator& begin();
+		UnicodeIterator& end();
+		
+		
+	};
 
+	
 	/*
 	class UTF8String;
 
