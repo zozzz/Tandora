@@ -21,38 +21,29 @@ namespace common
 		return "";
 	}
 
-	File::File(const char* file, Mode mode, Encoding enc, bool readAllContent):
+	File::File(const char* file, Mode mode, Encoding enc):
 		_enc(enc),
 		_size(0),
 		_buffer(NULL),
 		_position(0),
-		_rac(readAllContent),
 		_fileName(file)
 	{
 		_file = fopen(file, _fileModes[mode]);
-		if( _exists = (_file != NULL) )
-		{
-			if( _rac )
-				_readToBuffer();
-		}
-		else
+		if( _file == NULL )
 			ex_throw(IOError::FileNotFound, file);
 	}
 
 	File::~File()
 	{
-		FREE_ARRAY(_buffer);
-
-		if( _exists )
-			fclose(_file);
+		FREE_ARRAY(_buffer);		
 	}
-
-	void File::_readToBuffer()
+	
+	unicode::Iterator* File::iterator()
 	{
 		_size = size();
 		if( _size == -1L )
 		{
-			ex_throwm(IOError, strerror(errno), NULL);
+			ex_throwm(IOError, "File: '%s', %s", _fileName, strerror(errno));
 		}
 		else if( _MAX_ALLOWED_FILE_SIZE < _size )
 		{
@@ -63,72 +54,45 @@ namespace common
 		ALLOC_ARRAY(buffer, unsigned char, _size+1);
 		fread(buffer, 1, _size, _file);
 		buffer[_size] = '\0';
-
+		
+		unicode::Iterator* it;
+		
 		ex_try
 		{
 			switch( _enc )
 			{
-				case DEFAULT:
+				case AUTO:
 				case UTF_8:
-					_convertBufferToUTF8(buffer);
+					it = new unicode::Internal::UTF8Iterator<unsigned char>(buffer, _size);
 				break;
 
 				default:
-					// TODO: error...
+					ex_throw(Exception, "Undefined encoding: %d", _enc);
 				break;
 			}
 		}
 		ex_catch(...)
 		{
-			FREE_ARRAY(buffer);
+			if( it != NULL )
+				delete it;
 			ex_rethrow;
 		}
-
-		FREE_ARRAY(buffer);
+		
+		return it;
 	}
-
-	/**
-	 * PLAN:
-	 *
-	 * v1: egy bájtonként valamilyen ciklussal végigmegy
-	 * v2: egy bájtonként goto-val optimalizálva végigmegy
-     *
-     */
-
-	// 858
-	void File::_convertBufferToUTF8(unsigned char* buffer)
+	
+	unicode::ustring* File::getAllContent()
 	{
-		/*_length = 0;
-		ALLOC_ARRAY(_buffer, uchar, _size+1);
-
-
-
-		if( _size > 2 && _UTF8_DETECT_BOM(buffer) ) // skip BOM
-			*buffer += 3;
-
-		 * */
+		return NULL;
 	}
 
-	// TODO: unicode support + _buffer slice if _rac == true
 	size_t File::read(void* buffer, size_t bytesToRead)
 	{
 		return fread(buffer, 1, bytesToRead, _file);
 	}
 
-	uchar File::readc()
+	int File::readc()
 	{
-		if( _rac )
-		{
-			if( _length > _position )
-				return _buffer[_position++];
-		}
-		else if( _exists )
-		{
-
-		}
-		uchar uch;
-		uch.length = 0;
-		uch.value = 0;
-		return uch;
+		return getc(_file);
 	}
 }

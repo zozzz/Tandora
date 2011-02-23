@@ -26,17 +26,11 @@ namespace common
 			APPEND = 2
 		} Mode;
 
-		typedef enum
-		{
-			DEFAULT = 0,
-			UTF_8 = 1
-		} Encoding;
-
-		File(const char* file, Mode mode = READ, Encoding enc = DEFAULT, bool readAllContent = true);
+		File(const char* file, Mode mode = READ, Encoding enc = UTF_8);
 
 		~File();
 
-		unicode::uchar readc();
+		int readc();
 
 		size_t read(void* buffer, size_t bytesToRead);
 
@@ -47,6 +41,9 @@ namespace common
 		long int tell() const;
 
 		bool seek(long int offset, int origin);
+		
+		unicode::Iterator* iterator();
+		unicode::ustring* getAllContent();
 
 		inline long int size()
 		{
@@ -65,7 +62,8 @@ namespace common
 		inline bool eof() const { return feof(_file) == EOF; };
 
 		inline bool exists() const { return _exists; };
-
+		
+		
 	private:
 		static const char* _fileModes[];
 
@@ -90,11 +88,6 @@ namespace common
 		const char* _fileName;
 
 		/**
-		 * Encoding
-		 */
-		Encoding _enc;
-
-		/**
 		 * Size in bytes
 		 */
 		long int _size;
@@ -113,10 +106,15 @@ namespace common
 		 * Internal buffer for unicode chars
 		 */
 		unicode::uchar* _buffer;
+		
+		/**
+		 * Encoding
+		 */
+		Encoding _enc;
 
 
-		void _readToBuffer();
-		void _convertBufferToUTF8(unsigned char* buffer);
+		//void _readToBuffer();
+		//void _convertBufferToUTF8(unsigned char* buffer);
 	};
 }
 

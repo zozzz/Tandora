@@ -16,7 +16,7 @@
 #include "../debug/debug.h"
 #include <stdio.h> // for SEEK_SET, SEEK_CUR, SEEK_END
 
-#define IS_ASCII_BYTE(byte) ( ((byte) & 0x7F) != 0 )
+#define IS_ASCII_BYTE(byte) ((byte & 0x80) != 0x80)
 
 #define _UNICODE_STRING_BUFFER_INIT_SIZE_IN_CHAR 250
 
@@ -32,9 +32,20 @@
 	#endif
 #endif
 
-namespace common { namespace unicode
+namespace common 
+{ 
+
+	typedef enum
+	{
+		AUTO = 0, // try to determine encoding from BOM
+		UTF_8 = 1
+	} Encoding;
+	
+namespace unicode
 {
 
+	
+	
 	/*
 
 	 Hogyan használnám:
@@ -58,19 +69,14 @@ namespace common { namespace unicode
 
 	 */
 
+	/*
 	#pragma pack(push, 1)
 		typedef struct
 		{
 			typedef unsigned int ValueType;
 
-			/**
-			 * Decoded char code
-			 */
 			ValueType value;
 
-			/**
-			 * Encoded format length in byte
-			 */
 			unsigned char length;
 
 			bool operator == (int cmp) { return value == cmp; }
@@ -82,8 +88,11 @@ namespace common { namespace unicode
 
 		} uchar;
 	#pragma pack(pop)
+	*/
+	
+	//typedef unsigned int uchar;
 
-	/*
+	
 	#if !defined(_UNICODE_CHAR_MAX_SIZE) || _UNICODE_CHAR_MAX_SIZE == 2
 		#define _UNICODE_CHAR_MAX_SIZE 2
 		typedef unsigned short int uchar;
@@ -95,7 +104,7 @@ namespace common { namespace unicode
 		#error "Not supported unicode char size"
 		#define _UTF8_MAX 0
 	#endif
-	 */
+	
 
 	/* need operator overloads for uchar */
 
@@ -124,10 +133,9 @@ namespace common { namespace unicode
 	class Iterator
 	{
 	public:
-		typedef const uchar* Value;
+		typedef uchar Value;
 
 		Iterator():
-			_converted(NULL),
 			_convLength(0),
 			_position(0) {};
 
@@ -142,44 +150,103 @@ namespace common { namespace unicode
 			switch( origin )
 			{
 				case SEEK_SET:
+					if( offset < 0 )
+						ex_throw(ValueError::OutOfRange, 0, 0, offset);
+					
+					while( _convLength <= offset )
+					{
+						decode();
+						if( _converted[_convLength-1] == 0 )
+							ex_throw(ValueError::OutOfRange, 0, _convLength-1, offset);
+					}
+					_position = offset;
 				break;
 
 				case SEEK_CUR:
+					
+					if( offset < 0 && abs(offset) > _position )
+						ex_throw(ValueError::OutOfRange, 0, _position, ((int)_position) + offset);
+					
+					while( _convLength <= _position + offset )
+					{
+						decode();
+						if( _converted[_convLength-1] == 0 )
+							ex_throw(ValueError::OutOfRange, 0, _convLength-1, _position + offset);
+					}
+					
+					_position += offset;
 				break;
 
 				case SEEK_END:
+					while( _converted[_convLength-1] != 0 )
+						decode();
+					
+					if( _convLength - offset < 0 )
+						ex_throw(ValueError::OutOfRange, 0, _convLength-1, offset);
+					
+					_position = _convLength - offset;
+				break;
+				
+				default:
+					ex_throwm(Exception, "Undefined origin: %d", origin);
 				break;
 			}
 		}
 
-		Value begin()
-		{
-			_position = 0;
-			return current();
-		};
+		inline void reset() { _position = 0; }
 
-		Value next()
+		inline Value* next()
 		{
-			++_position;
-			return current();
+			if( _convLength <= _position )
+				decode();
+			
+			return _converted + _position++;
 		}
-
-		Value prev()
+		
+		inline void markStart() 
 		{
-			if( _position > 0 )
-			{
-				--_position;
-				return &_converted[_position];
-			}
-			return NULL;
+			if( _convLength == 0 )
+				ex_throwm(Exception, "This function can only be invoked after the Iterator::next() function!", NULL);
+			
+			_markStart = _position-1; 
 		}
-
-		virtual Value current() = 0;
+		
+		inline void markEnd()
+		{ 
+			if( _convLength == 0 )
+				ex_throwm(Exception, "This function can only be invoked after the Iterator::next() function!", NULL);
+			
+			_markEnd = _position; 
+		}
+		
+		inline Value* getMarkedBuffer()
+		{
+			size_t size = _markEnd - _markStart;
+			if( size <= 0 )
+				ex_throwm(ValueError::OutOfRange, "Invalid mark range (%d - %d)!", _markStart, _markEnd);
+			
+			trace(size);
+			
+			Value* ret = new Value[size+1];
+			
+			for(size_t i=0 ; i<size ; i++)
+				ret[i] = _converted[_markStart+i];
+			
+			_markStart = 0;
+			_markEnd = 0;
+			
+			ret[size] = '\0';
+			return ret;
+		}
 
 	protected:
-		uchar* _converted;
-		size_t _convLength;
-		size_t _position;
+		Value*	_converted;
+		size_t	_convLength;
+		size_t	_position;
+		size_t  _markStart;
+		size_t  _markEnd;
+		
+		virtual void decode() = 0;
 	};
 
 

@@ -8,6 +8,7 @@
 #ifndef DEBUG_H
 #define	DEBUG_H
 
+
 #ifdef __DEBUG__
 
 #include <iostream>
@@ -16,6 +17,9 @@
 #include <string.h>
 #include <math.h>
 #include <bitset>
+
+namespace common{ namespace debug {
+
 
 /*
 void __dbg_trace__(int line, const char* fn, ...)
@@ -95,7 +99,7 @@ void __dbg_trace__(int line, const char* fn, ...)
 }
  * */
 
-namespace common{ namespace debug {
+
 
 
 
@@ -114,6 +118,8 @@ namespace common{ namespace debug {
 // TODO: improve
 #define traceb(var) std::cout << #var << " = " << std::bitset<32>(var) << std::endl
 
+}}
+	
 #else
 #define Assert(var1, op, var2)
 #define AssertExit(var1, op, var2)
@@ -121,7 +127,6 @@ namespace common{ namespace debug {
 #define traceb(var)
 #endif
 
-}}
 
 #endif	/* DEBUG_H */
 

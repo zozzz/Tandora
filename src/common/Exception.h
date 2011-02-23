@@ -59,8 +59,8 @@ namespace common
 	private:
 		static std::deque<Internal::EX_CallStackItem*> _stack;
 	};
-
-
+	
+	
 	#define _EX_PRE_DECL(name, base) class name;
 	#define _EX_DECL(name, base, defMsg) class name : public base \
 		{ public: \
@@ -105,7 +105,7 @@ namespace common
 
 	_EX_PRE_DECL(ValueError, Exception)
 	_EX_PRE_DECL(OutOfRange, ValueError)
-
+	
 	_EX_DECL(ValueError, Exception, "Undefined error")
 		_EX_DECL_SUB_ERR(common, OutOfRange)
 	_EX_DECL_END
@@ -125,6 +125,13 @@ namespace common
 	_EX_DECL_END
 
 	_EX_DECL_MSG(MemoryError, NotEnough, "Not enough memory, try to allocate: %d byte!")
+			
+	
+	//------------------------------------------------------------------------------
+	// StopIteration
+	//------------------------------------------------------------------------------
+			
+	_EX_DECL_MSG(Exception, StopIteration, "Iterator reach end of stream!")
 }
 
 #endif	/* EXCEPTION_H */

@@ -53,38 +53,127 @@ namespace Internal
 	class UTF8Iterator: public Iterator {};
 
 	template<>
-	class UTF8Iterator<char>: public Iterator
+	class UTF8Iterator<unsigned char>: public Iterator
 	{
 	public:
-		typedef char			Source;
-		typedef char*			SourcePtr;
-		typedef const char		CSource;
-		typedef const char*		CSourcePtr;
-
-		UTF8Iterator(CSourcePtr buffer, bool selfHandled = false):
-			_selfHandledBuffer(selfHandled),
-			_buffer(buffer),
+		typedef unsigned char	Source;
+		typedef unsigned char*	SourcePtr;
+		
+		UTF8Iterator(SourcePtr buffer, size_t length):
 			Iterator()
-		{
-#ifndef _CHAR_UNSIGNED
-			// TODO: x
-#endif
+		{			
+			_buffer = _start = buffer;
+			
+			ALLOC_ARRAY(_converted, Value, length+1);
+			_converted[length] = '\0';
 		}
 
 		virtual ~UTF8Iterator()
 		{
-			if( _selfHandledBuffer && _buffer != NULL )
-				delete[] _buffer;
+			if( _start != NULL )
+				delete[] _start;
 		}
 
+		/*
+		#ifndef _CHAR_UNSIGNED
+			#define __GET_NEXT_CHAR() ((unsigned char)*_buffer++)
+		#else
+			#define __GET_NEXT_CHAR() ((unsigned char)*_buffer++)
+		#endif
+		*/
+		
+		/*
 		virtual Value current()
 		{
-			trace("UTF8Iterator<char>::current()");
+			uchar ch = __GET_NEXT_CHAR();
+				
+			if( IS_ASCII_BYTE(ch) )
+			{
+				_converted[_convLength++] = ch;
+			}
+			else if( IS_UTF8_BYTE(ch) )
+			{
+				trace("UTF");
+				trace(ch);
+				if( IS_UTF8_LEAD_BYTE(ch) )
+				{
+					//trace("utf_lead");
+					unsigned int length = UTF8_GET_LENGTH_FROM_HEAD(ch);
+					trace(length);
+					
+					if( length == 2 )
+						ch = (ch & _UTF8_BM_LEAD_2) << 6;
+					else if( length == 3 )
+						ch = (ch & _UTF8_BM_LEAD_3) << 12;
+					else if( length == 4 )
+						ch = (ch & _UTF8_BM_LEAD_4) << 18;
+					
+					while( --length )
+					{
+						//trace(length);
+						ch |= (__GET_NEXT_CHAR() & _UTF8_BM_FLOW) << (length * 6);
+					}
+					
+					_converted[_convLength++] = ch;
+				}
+				else
+				{
+					ex_throw(UnicodeError::Malformed, ch, _convLength);
+				}
+			}
+			else
+			{
+				_reachEnd = true;
+				trace(_convLength);
+				return NULL;
+			}
+			
+			return &_converted[_position];
+		}*/
+		
+	protected:
+		
+		#define __GET_NEXT_BYTE() (*_buffer++)
+		#define __SEEK_NEXT_BYTE() _buffer++
+		#define _CURRENT_ (*_buffer)
+		
+		// 0.622 / 100
+		virtual void decode()
+		{
+			if( IS_ASCII_BYTE( _CURRENT_ ) )
+			{
+				_converted[_convLength++] = _CURRENT_;
+				__SEEK_NEXT_BYTE();
+			}
+			else if( IS_UTF8_LEAD_BYTE( _CURRENT_ ) )
+			{
+				Value ch;
+				unsigned char length = UTF8_GET_LENGTH_FROM_HEAD( _CURRENT_ );
+				
+				if( length == 2 )
+					ch = (_CURRENT_ & _UTF8_BM_LEAD_2) << 6;
+				else if( length == 3 )
+					ch = (_CURRENT_ & _UTF8_BM_LEAD_3) << 12;
+				else if( length == 4 )
+					ch = (_CURRENT_ & _UTF8_BM_LEAD_4) << 18;
+
+				while( --length )
+				{
+					ch |= (__GET_NEXT_BYTE() & _UTF8_BM_FLOW) << (length * 6);
+				}
+
+				_converted[_convLength++] = ch;
+				__SEEK_NEXT_BYTE();
+			}
+			else if( IS_UTF8_BYTE( _CURRENT_ ) )
+			{
+				ex_throw(UnicodeError::Malformed, _CURRENT_, _convLength);
+			}
 		}
 
 	private:
-		bool _selfHandledBuffer;
-		CSourcePtr _buffer;
+		SourcePtr _start;
+		SourcePtr _buffer;
 	};
 
 }
