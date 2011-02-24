@@ -32,67 +32,20 @@
 	#endif
 #endif
 
-namespace common 
-{ 
+namespace common
+{
 
 	typedef enum
 	{
 		AUTO = 0, // try to determine encoding from BOM
 		UTF_8 = 1
 	} Encoding;
-	
+
 namespace unicode
 {
+	// http://bytes.com/topic/c/answers/138989-class-template-parameter-function
+	// http://www.newty.de/fpt/fpt.html
 
-	
-	
-	/*
-
-	 Hogyan használnám:
-	 * UnicodeString str = L"Árvíztűrőtükörfúrógép";
-	 * str += " XYZ";
-	 *
-	 * str.charAt(1) -> uchar;
-	 *
-	 * File fio("File");
-	 * UnicodeString* fc = fio.readAll();
-	 * UnicodeIterator uci = fio.iterator();
-	 *
-	 * UIterator* z = fio.iterator();
-	 * UIterator* x = utf8 L"Árvíz";
-	 * UString
-	 *
-
-
-
-
-
-	 */
-
-	/*
-	#pragma pack(push, 1)
-		typedef struct
-		{
-			typedef unsigned int ValueType;
-
-			ValueType value;
-
-			unsigned char length;
-
-			bool operator == (int cmp) { return value == cmp; }
-			bool operator != (int cmp) { return value != cmp; }
-			bool operator >= (int cmp) { return value >= cmp; }
-			bool operator <= (int cmp) { return value <= cmp; }
-			bool operator >  (int cmp) { return value >  cmp; }
-			bool operator <  (int cmp) { return value <  cmp; }
-
-		} uchar;
-	#pragma pack(pop)
-	*/
-	
-	//typedef unsigned int uchar;
-
-	
 	#if !defined(_UNICODE_CHAR_MAX_SIZE) || _UNICODE_CHAR_MAX_SIZE == 2
 		#define _UNICODE_CHAR_MAX_SIZE 2
 		typedef unsigned short int uchar;
@@ -104,7 +57,8 @@ namespace unicode
 		#error "Not supported unicode char size"
 		#define _UTF8_MAX 0
 	#endif
-	
+
+
 
 	/* need operator overloads for uchar */
 
@@ -128,16 +82,28 @@ namespace unicode
 
 
 	//------------------------------------------------------------------------------
-	// Abstract class for UTF-8, UTF-16, etc.. iterators
+	// Unicode Iterator
 	//------------------------------------------------------------------------------
+	#define __CALL_DECODE() _decode(&_buffer, _converted[_convLength++])
+	template<typename _Source>
 	class Iterator
 	{
 	public:
-		typedef uchar Value;
+		typedef uchar			Value;
+		typedef uchar*			ValuePtr;
+		typedef _Source			Source;
+		typedef _Source*		SourcePtr;
 
-		Iterator():
+		Iterator(unsigned char* buff, size_t size, void (*decoderFunction)(SourcePtr*, uchar&)):
 			_convLength(0),
-			_position(0) {};
+			_position(0),
+			_decode(decoderFunction)
+		{
+			_buffer = buff;
+
+			ALLOC_ARRAY(_converted, Value, size+1);
+			_converted[size] = '\0';
+		};
 
 		virtual ~Iterator()
 		{
@@ -152,10 +118,10 @@ namespace unicode
 				case SEEK_SET:
 					if( offset < 0 )
 						ex_throw(ValueError::OutOfRange, 0, 0, offset);
-					
+
 					while( _convLength <= offset )
 					{
-						decode();
+						__CALL_DECODE();
 						if( _converted[_convLength-1] == 0 )
 							ex_throw(ValueError::OutOfRange, 0, _convLength-1, offset);
 					}
@@ -163,30 +129,30 @@ namespace unicode
 				break;
 
 				case SEEK_CUR:
-					
+
 					if( offset < 0 && abs(offset) > _position )
 						ex_throw(ValueError::OutOfRange, 0, _position, ((int)_position) + offset);
-					
+
 					while( _convLength <= _position + offset )
 					{
-						decode();
+						__CALL_DECODE();
 						if( _converted[_convLength-1] == 0 )
 							ex_throw(ValueError::OutOfRange, 0, _convLength-1, _position + offset);
 					}
-					
+
 					_position += offset;
 				break;
 
 				case SEEK_END:
 					while( _converted[_convLength-1] != 0 )
-						decode();
-					
+						__CALL_DECODE();
+
 					if( _convLength - offset < 0 )
 						ex_throw(ValueError::OutOfRange, 0, _convLength-1, offset);
-					
+
 					_position = _convLength - offset;
 				break;
-				
+
 				default:
 					ex_throwm(Exception, "Undefined origin: %d", origin);
 				break;
@@ -198,56 +164,71 @@ namespace unicode
 		inline Value* next()
 		{
 			if( _convLength <= _position )
-				decode();
-			
+				__CALL_DECODE();
+
 			return _converted + _position++;
 		}
-		
-		inline void markStart() 
+
+		inline void markStart()
 		{
 			if( _convLength == 0 )
 				ex_throwm(Exception, "This function can only be invoked after the Iterator::next() function!", NULL);
-			
-			_markStart = _position-1; 
+
+			_markStart = _position-1;
 		}
-		
+
 		inline void markEnd()
-		{ 
+		{
 			if( _convLength == 0 )
 				ex_throwm(Exception, "This function can only be invoked after the Iterator::next() function!", NULL);
-			
-			_markEnd = _position; 
+
+			_markEnd = _position;
 		}
-		
+
 		inline Value* getMarkedBuffer()
 		{
 			size_t size = _markEnd - _markStart;
 			if( size <= 0 )
 				ex_throwm(ValueError::OutOfRange, "Invalid mark range (%d - %d)!", _markStart, _markEnd);
-			
+
 			trace(size);
-			
+
 			Value* ret = new Value[size+1];
-			
+
 			for(size_t i=0 ; i<size ; i++)
 				ret[i] = _converted[_markStart+i];
-			
+
 			_markStart = 0;
 			_markEnd = 0;
-			
+
 			ret[size] = '\0';
 			return ret;
 		}
 
-	protected:
-		Value*	_converted;
-		size_t	_convLength;
-		size_t	_position;
-		size_t  _markStart;
-		size_t  _markEnd;
-		
-		virtual void decode() = 0;
+	public:
+		ValuePtr	_converted;
+		SourcePtr	_buffer;
+
+		size_t		_convLength;
+		size_t		_position;
+		size_t		_markStart;
+		size_t		_markEnd;
+
+		void (*_decode)(SourcePtr*, uchar&);
+
+		//virtual inline void decode(){};
 	};
+
+
+
+
+	namespace Encoder
+	{
+		inline int UTF8(unsigned char* buff)
+		{
+
+		}
+	}
 
 
 
@@ -309,6 +290,45 @@ namespace unicode
 	_EX_DECL_MSG(UnicodeError, Malformed, "Malformed character \\u%X at %d!")
 
 	#include "utf8.h"
+
+	namespace Decoder
+	{
+		#define __GET_NEXT_BYTE() (*(++*_buffer))
+		#define __SEEK_NEXT_BYTE() ++*_buffer
+		#define _CURRENT_ (**_buffer)
+
+		inline void UTF8(unsigned char** _buffer, uchar& _converted)
+		{
+			if( IS_ASCII_BYTE( _CURRENT_ ) )
+			{
+				_converted = _CURRENT_;
+				__SEEK_NEXT_BYTE();
+			}
+			else if( IS_UTF8_LEAD_BYTE( _CURRENT_ ) )
+			{
+				unsigned char length = UTF8_GET_LENGTH_FROM_HEAD( _CURRENT_ );
+
+				if( length == 2 )
+					_converted = (_CURRENT_ & _UTF8_BM_LEAD_2) << 6;
+				else if( length == 3 )
+					_converted = (_CURRENT_ & _UTF8_BM_LEAD_3) << 12;
+				else if( length == 4 )
+					_converted = (_CURRENT_ & _UTF8_BM_LEAD_4) << 18;
+
+				while( --length )
+				{
+					_converted |= (__GET_NEXT_BYTE() & _UTF8_BM_FLOW) << (length * 6);
+				}
+
+				__SEEK_NEXT_BYTE();
+			}
+			else if( IS_UTF8_BYTE( _CURRENT_ ) )
+			{
+				ex_throw(UnicodeError::Malformed, _CURRENT_, 0);
+			}
+
+		}
+	}
 }}
 
 #ifdef __DEBUG__

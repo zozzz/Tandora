@@ -41,15 +41,21 @@
 
 namespace Internal
 {
-	class UTF8Converter
+	/*class UTF8Converter : public UConverter
 	{
 	public:
-		// constructors for: char, char*, wchar_t, wchar_t*, uchar, uchar*
-		// operators for: uchar, uchar*, ustring, ustring*
-	};
+		inline static uchar* decode(const char* array){}
+		inline static uchar* decode(const wchar_t* array){}
+
+		inline static char* encode(const uchar* array){}
+		inline static char* encode(const ustring* str){}
+
+		// constructors for: char*, wchar_t*, uchar*
+		// operators for: uchar*, ustring*
+	};*/
 
 
-	template<typename _SourceType>
+	/*template<typename _SourceType>
 	class UTF8Iterator: public Iterator {};
 
 	template<>
@@ -58,12 +64,12 @@ namespace Internal
 	public:
 		typedef unsigned char	Source;
 		typedef unsigned char*	SourcePtr;
-		
+
 		UTF8Iterator(SourcePtr buffer, size_t length):
 			Iterator()
-		{			
+		{
 			_buffer = _start = buffer;
-			
+
 			ALLOC_ARRAY(_converted, Value, length+1);
 			_converted[length] = '\0';
 		}
@@ -74,82 +80,26 @@ namespace Internal
 				delete[] _start;
 		}
 
-		/*
-		#ifndef _CHAR_UNSIGNED
-			#define __GET_NEXT_CHAR() ((unsigned char)*_buffer++)
-		#else
-			#define __GET_NEXT_CHAR() ((unsigned char)*_buffer++)
-		#endif
-		*/
-		
-		/*
-		virtual Value current()
-		{
-			uchar ch = __GET_NEXT_CHAR();
-				
-			if( IS_ASCII_BYTE(ch) )
-			{
-				_converted[_convLength++] = ch;
-			}
-			else if( IS_UTF8_BYTE(ch) )
-			{
-				trace("UTF");
-				trace(ch);
-				if( IS_UTF8_LEAD_BYTE(ch) )
-				{
-					//trace("utf_lead");
-					unsigned int length = UTF8_GET_LENGTH_FROM_HEAD(ch);
-					trace(length);
-					
-					if( length == 2 )
-						ch = (ch & _UTF8_BM_LEAD_2) << 6;
-					else if( length == 3 )
-						ch = (ch & _UTF8_BM_LEAD_3) << 12;
-					else if( length == 4 )
-						ch = (ch & _UTF8_BM_LEAD_4) << 18;
-					
-					while( --length )
-					{
-						//trace(length);
-						ch |= (__GET_NEXT_CHAR() & _UTF8_BM_FLOW) << (length * 6);
-					}
-					
-					_converted[_convLength++] = ch;
-				}
-				else
-				{
-					ex_throw(UnicodeError::Malformed, ch, _convLength);
-				}
-			}
-			else
-			{
-				_reachEnd = true;
-				trace(_convLength);
-				return NULL;
-			}
-			
-			return &_converted[_position];
-		}*/
-		
 	protected:
-		
+
 		#define __GET_NEXT_BYTE() (*_buffer++)
 		#define __SEEK_NEXT_BYTE() _buffer++
 		#define _CURRENT_ (*_buffer)
-		
+
 		// 0.622 / 100
-		virtual void decode()
+		virtual inline void decode()
 		{
 			if( IS_ASCII_BYTE( _CURRENT_ ) )
 			{
 				_converted[_convLength++] = _CURRENT_;
 				__SEEK_NEXT_BYTE();
+				return;
 			}
 			else if( IS_UTF8_LEAD_BYTE( _CURRENT_ ) )
 			{
 				Value ch;
 				unsigned char length = UTF8_GET_LENGTH_FROM_HEAD( _CURRENT_ );
-				
+
 				if( length == 2 )
 					ch = (_CURRENT_ & _UTF8_BM_LEAD_2) << 6;
 				else if( length == 3 )
@@ -174,7 +124,7 @@ namespace Internal
 	private:
 		SourcePtr _start;
 		SourcePtr _buffer;
-	};
+	};*/
 
 }
 

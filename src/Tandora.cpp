@@ -12,8 +12,8 @@
 #include "common/common.h"
 #include <limits.h>
 
-//#define _ROOT "D:\\Works\\cpp\\Tandora\\"
-#define _ROOT "C:\\Users\\Zozzz\\Documents\\Tandora\\"
+#define _ROOT "D:\\Works\\cpp\\Tandora\\"
+//#define _ROOT "C:\\Users\\Zozzz\\Documents\\Tandora\\"
 
 using namespace std;
 using namespace common;
@@ -31,8 +31,46 @@ typedef struct
 } zchar;
 #pragma pack(pop)
 
+template<int Func(unsigned char*)>
+class IITest
+{
+public:
+	void callF(){ unsigned char* x = new unsigned char[10]; Func(x); };
+};
+
+inline int convXtoY(unsigned char* buff)
+{
+	trace("convXtoY");
+}
+
+inline int test(unsigned char** buff, unsigned char& x)
+{
+	static int counter = 10;
+	++*buff;
+	x = counter++;
+	return 1;
+}
+
+
 int main(int argc, char **argv)
 {
+	/*int (*tokMakk)(unsigned char** buff, unsigned char&) = NULL;
+	tokMakk = test;
+
+	unsigned char* _ittest = (unsigned char*)"Hello World";
+	unsigned char* _ret = new unsigned char[10];
+	test(&_ittest, _ret[0]);
+	test(&_ittest, _ret[1]);
+	tokMakk(&_ittest, _ret[2]);
+
+	trace((int)_ret[0]);
+	trace((int)_ret[1]);
+	trace((int)_ret[2]);
+
+	cout << _ittest << endl;
+
+	return 0;*/
+
 	#ifdef __UNITTEST__
 		// return UnitTest::run(argc, argv);
 	#endif
@@ -105,6 +143,8 @@ int main(int argc, char **argv)
 
 	//traceb(16);
 
+	//char ch;
+	//cin >> ch;
 
 
 	ex_try
@@ -128,70 +168,51 @@ int main(int argc, char **argv)
 
 		char ch = 200;
 
-		
+
 		FILE* _file = fopen(_ROOT "test\\UIComponent.as", "rb");
-		
+
 		perror("x: ");
-		
+
 		fseek(_file, 0, SEEK_END);
 		long _fsize = ftell(_file);
 		fseek(_file, 0, SEEK_SET);
-		
+
 		unsigned char* _fileContent = new unsigned char[_fsize+1];
 		fread(_fileContent, 1, _fsize, _file);
 		_fileContent[_fsize] = '\0';
-		
+
 		//trace(*uit->next());
-		
+
 		unsigned char* _ittest = (unsigned char*)"Hello World";
 		trace(_ittest);
-		
-		Iterator::Value _ch;
-		
-		for( int i=0 ; i<11 ; i++ )
-		{
-			trace((unsigned int)_ittest[i]);
-		}
-		
-		int II = 0;
-		Iterator::Value* wch;
-		TIMER_N_START(iterator, 100)
-		
-			//unicode::Iterator* uit = new unicode::Internal::UTF8Iterator<unsigned char>(_fileContent, _fsize);
-			//unicode::Iterator* uit = new unicode::Internal::UTF8Iterator<unsigned char>(_ittest, 11);
-				
-			File f(_ROOT "test\\UIComponent.as");
-			unicode::Iterator* uit = f.iterator();
-		
-		
-			for( Iterator::Value* ch  ; *(ch = uit->next()) != 0 ; )
-			{
-				
-				
-			}
-			
-			delete uit;
-			
-		TIMER_END(iterator)
-		
-		unsigned char _x_ = 200;
-		
-		
-		
 
-		
+		TIMER_N_START(Iterator, 100)
+
+		Iterator<unsigned char> uit(_fileContent, _fsize, Decoder::UTF8);
+
+		for( uchar* ch ; *(ch = uit.next()) ; )
+		{
+			//trace(*ch);
+		}
+
+		TIMER_END(Iterator)
+
+
+
+
+
 		/*
 		uchar	_oValue = 20;
 		uchar* _refValue;
 		uchar _cloneValue;
-		
+
 		TIMER_N_START(passByRef, 200000000)
 			_refValue = &_oValue;
 			if( *_refValue == 0 )
 			{
 			}
 		TIMER_END(passByRef)
-		
+
 		TIMER_N_START(clone, 200000000)
 			_cloneValue = _oValue;
 			if( _cloneValue == 0 )

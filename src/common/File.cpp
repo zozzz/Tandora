@@ -35,10 +35,10 @@ namespace common
 
 	File::~File()
 	{
-		FREE_ARRAY(_buffer);		
+		FREE_ARRAY(_buffer);
 	}
-	
-	unicode::Iterator* File::iterator()
+
+	/*unicode::Iterator* File::iterator()
 	{
 		_size = size();
 		if( _size == -1L )
@@ -54,9 +54,9 @@ namespace common
 		ALLOC_ARRAY(buffer, unsigned char, _size+1);
 		fread(buffer, 1, _size, _file);
 		buffer[_size] = '\0';
-		
+
 		unicode::Iterator* it;
-		
+
 		ex_try
 		{
 			switch( _enc )
@@ -77,14 +77,14 @@ namespace common
 				delete it;
 			ex_rethrow;
 		}
-		
+
 		return it;
 	}
-	
+
 	unicode::ustring* File::getAllContent()
 	{
 		return NULL;
-	}
+	}*/
 
 	size_t File::read(void* buffer, size_t bytesToRead)
 	{

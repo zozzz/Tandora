@@ -41,9 +41,9 @@ namespace common
 		long int tell() const;
 
 		bool seek(long int offset, int origin);
-		
-		unicode::Iterator* iterator();
-		unicode::ustring* getAllContent();
+
+//		unicode::Iterator* iterator();
+//		unicode::ustring* getAllContent();
 
 		inline long int size()
 		{
@@ -62,8 +62,8 @@ namespace common
 		inline bool eof() const { return feof(_file) == EOF; };
 
 		inline bool exists() const { return _exists; };
-		
-		
+
+
 	private:
 		static const char* _fileModes[];
 
@@ -106,7 +106,7 @@ namespace common
 		 * Internal buffer for unicode chars
 		 */
 		unicode::uchar* _buffer;
-		
+
 		/**
 		 * Encoding
 		 */
