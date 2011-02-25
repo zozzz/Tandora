@@ -14,7 +14,7 @@ namespace common
 		va_list args;
 		va_start(args, msg);
 
-		size_t buffSize = (strlen(msg)+1) * sizeof(char);
+		int buffSize = (strlen(msg)+1) * sizeof(char);
 		char* buffer;
 		ALLOC_ARRAY(buffer, char, buffSize+1);
 		buffer[buffSize] = '\0';
@@ -62,8 +62,8 @@ namespace common
 	Exception::Exception(const char* _fn, const char* _file, const int _line, const char* _msg) throw():
 		func(_fn),
 		file(_file),
-		line(_line),
-		msg(_msg)
+		msg(_msg),
+		line(_line)
 	{
 		Internal::_addStack(_fn, _file, _line);
 	}

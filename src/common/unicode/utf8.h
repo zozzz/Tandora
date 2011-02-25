@@ -5,13 +5,11 @@
  * Created on 2011. február 22., 12:27
  */
 
-/*****************************************************************************
- * INCLUDE ONLY FOR UNICODE.H (DO NOT INCLUDE ANY OTHER FILE)
- ****************************************************************************/
-
 #ifndef UTF8_H
 #define	UTF8_H
 
+#include "unicode.h"
+#include "../../global.h"
 
 #define _UTF8_BM_LEAD_2 0x1F
 #define _UTF8_BM_LEAD_3 0x0F
@@ -30,6 +28,7 @@
 #define UTF8_DETECT_BOM(buff) ((buff[0]) == _UTF8_BOM_0 && (buff[1]) == _UTF8_BOM_1 && (buff[2]) == _UTF8_BOM_2)
 
 #define UTF8_GET_LENGTH_FROM_HEAD(oct) ( oct < 0xE0 ? 2 : ( oct < 0xF0 ? 3 : 4) )
+#define UTF8_GET_LENGTH_FROM_CH(ch) ( (ch) < 0x800 ? 2 : ((ch) < 0x10000 ? 3 : 4) )
 
 
 #ifdef utf8
@@ -38,9 +37,21 @@
 	#define utf8 (common::unicode::Internal::UTF8Converter)
 #endif
 
-
-namespace Internal
+namespace common { namespace unicode
 {
+	namespace Decode
+	{
+		uchar UTF8(unsigned char** buffer, uchar& cache);
+	}
+
+	namespace Encode
+	{
+		unsigned char UTF8(uchar** buffer, uchar& cache);
+	}
+}}
+
+
+
 	/*class UTF8Converter : public UConverter
 	{
 	public:
@@ -126,7 +137,7 @@ namespace Internal
 		SourcePtr _buffer;
 	};*/
 
-}
+
 
 #endif	/* UTF8_H */
 

@@ -1,14 +1,10 @@
 
-
-#include <iostream>
+#include "File.h"
+#include "unicode/unicode.h"
+#include "unicode/utf8.h"
 #include <math.h>
 #include <errno.h>
 #include <string.h>
-
-#include "../settings.h"
-#include "File.h"
-#include "Allocator.h"
-#include "Exception.h"
 
 namespace common
 {
@@ -22,24 +18,16 @@ namespace common
 	}
 
 	File::File(const char* file, Mode mode, Encoding enc):
-		_enc(enc),
+		_fileName(file),
 		_size(0),
-		_buffer(NULL),
 		_position(0),
-		_fileName(file)
+		_buffer(NULL),
+		_enc(enc)
 	{
 		_file = fopen(file, _fileModes[mode]);
 		if( _file == NULL )
 			ex_throw(IOError::FileNotFound, file);
-	}
 
-	File::~File()
-	{
-		FREE_ARRAY(_buffer);
-	}
-
-	/*unicode::Iterator* File::iterator()
-	{
 		_size = size();
 		if( _size == -1L )
 		{
@@ -49,42 +37,103 @@ namespace common
 		{
 			ex_throw(IOError::FileIsTooLarge, _fileName, File::formatSize(_size));
 		}
+	}
 
+	File::~File()
+	{
+		FREE_ARRAY(_buffer);
+	}
+
+	unicode::Reader* File::reader()
+	{
+		seek(0L, SEEK_SET);
 		unsigned char* buffer;
 		ALLOC_ARRAY(buffer, unsigned char, _size+1);
 		fread(buffer, 1, _size, _file);
 		buffer[_size] = '\0';
 
-		unicode::Iterator* it;
+		// TODO: BOM Detektálás + warning ha eltérő a megadott encodingtól
 
-		ex_try
+
+		/*if( _enc == AUTO_DETECT )
+		{
+		}
+		else if( _enc == UTF_8 )
+		{
+			return new Reader(buffer, _size, Decode::UTF8);
+		}*/
+
+		switch( _enc )
+		{
+			case UTF_8:
+				return new Reader(buffer, _size, Decode::UTF8);
+			break;
+
+			case AUTO_DETECT:
+			break;
+
+			default:
+			break;
+		}
+
+		return NULL;
+	}
+
+	long int File::write(unicode::Writer* writer, bool writeBOM)
+	{
+		writer->reset();
+		seek(0, SEEK_SET);
+
+		if( writeBOM )
 		{
 			switch( _enc )
 			{
-				case AUTO:
 				case UTF_8:
-					it = new unicode::Internal::UTF8Iterator<unsigned char>(buffer, _size);
+					fputc(_UTF8_BOM_0, _file);
+					fputc(_UTF8_BOM_1, _file);
+					fputc(_UTF8_BOM_2, _file);
 				break;
 
+				case AUTO_DETECT:
 				default:
-					ex_throw(Exception, "Undefined encoding: %d", _enc);
+					ex_throwm(Exception, "AUTO_DETECT encoding not support BOM writing!", NULL);
 				break;
 			}
 		}
-		ex_catch(...)
+
+		unsigned int ch;
+		size_t writed = 0;
+
+		while( (ch = writer->next()) )
 		{
-			if( it != NULL )
-				delete it;
-			ex_rethrow;
+			_DUMP_UCHAR(ch);
+			fputc(ch, _file);
+			++writed;
 		}
 
-		return it;
+		return writed;
 	}
 
-	unicode::ustring* File::getAllContent()
+	long int File::write(unicode::uchar* ch, long int size, bool writeBOM)
 	{
-		return NULL;
-	}*/
+		Writer* w;
+
+		switch( _enc )
+		{
+			case UTF_8:
+				w = new Writer(ch, size, Encode::UTF8);
+			break;
+
+			case AUTO_DETECT:
+			default:
+				ex_throwm(Exception, "AUTO_DETECT encoding not supported when need to write uchar*!", NULL);
+			break;
+		}
+
+		long int writed = write(w, writeBOM);
+		delete w;
+		return writed;
+	}
 
 	size_t File::read(void* buffer, size_t bytesToRead)
 	{

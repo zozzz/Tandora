@@ -154,6 +154,7 @@ namespace common
 	{
 		FREE_ARRAY(_storage);
 	}
+
 }
 
 #endif	/* ALLOCATOR_H */

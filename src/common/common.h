@@ -8,14 +8,19 @@
 #ifndef COMMON_H
 #define	COMMON_H
 
-#include "Allocator.h"
-#include "Exception.h"
-#include "File.h"
-#include "unicode/unicode.h"
 
 #include "debug/debug.h"
 #include "debug/UnitTest.h"
 #include "debug/PerformanceTest.h"
+
+#include "Allocator.h"
+#include "Exception.h"
+
+#include "unicode/unicode.h"
+#include "unicode/utf8.h"
+
+#include "File.h"
+
 
 #endif	/* COMMON_H */
 

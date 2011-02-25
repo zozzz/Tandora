@@ -1,16 +1,4 @@
-#include <iostream>
-#include "global.h"
-#include "parser/Token.h"
-#include "parser/TandoraTokens.h"
-#include "parser/TandoraParser.h"
-#include <bitset>
-#include <string.h>
 #include "Application.h"
-
-#include <stdio.h>
-#include <stdarg.h>
-#include "common/common.h"
-#include <limits.h>
 
 #define _ROOT "D:\\Works\\cpp\\Tandora\\"
 //#define _ROOT "C:\\Users\\Zozzz\\Documents\\Tandora\\"
@@ -18,58 +6,29 @@
 using namespace std;
 using namespace common;
 using namespace common::unicode;
-using namespace tandora;
+//using namespace tandora;
 
-struct XXX{ int z; };
-
-#pragma pack(push, 1)
-typedef struct
-{
-	unsigned int c;
-	unsigned char z;
-
-} zchar;
-#pragma pack(pop)
-
-template<int Func(unsigned char*)>
-class IITest
+template<typename T>
+class Temp
 {
 public:
-	void callF(){ unsigned char* x = new unsigned char[10]; Func(x); };
+	Temp(T cb)
+	{
+		cb(10);
+	};
+
+	void x(){ trace("Temp:x"); };
+	void z(){ trace("Temp:z"); };
 };
 
-inline int convXtoY(unsigned char* buff)
+int TTest(int z)
 {
-	trace("convXtoY");
+	trace(z);
+	return 0;
 }
-
-inline int test(unsigned char** buff, unsigned char& x)
-{
-	static int counter = 10;
-	++*buff;
-	x = counter++;
-	return 1;
-}
-
 
 int main(int argc, char **argv)
 {
-	/*int (*tokMakk)(unsigned char** buff, unsigned char&) = NULL;
-	tokMakk = test;
-
-	unsigned char* _ittest = (unsigned char*)"Hello World";
-	unsigned char* _ret = new unsigned char[10];
-	test(&_ittest, _ret[0]);
-	test(&_ittest, _ret[1]);
-	tokMakk(&_ittest, _ret[2]);
-
-	trace((int)_ret[0]);
-	trace((int)_ret[1]);
-	trace((int)_ret[2]);
-
-	cout << _ittest << endl;
-
-	return 0;*/
 
 	#ifdef __UNITTEST__
 		// return UnitTest::run(argc, argv);
@@ -85,146 +44,71 @@ int main(int argc, char **argv)
 	#endif
 	#endif
 
-	//_WAIT_FOR_KEYP
-	//std::string dummy;
-	//std::getline(std::cin, dummy);
+	File f2(_ROOT "test\\utf8.txt");
+	File f(_ROOT "test\\utf8_2.txt", File::WRITE);
+	//unsigned char* hw = (unsigned char*)"Hello World";
+	//Reader* reader = f.reader();
+	//Reader* reader = new Reader(hw, 11, unicode::Decode::UTF8);
+	//Reader* rea = new Reader();
+	//unicode::Internal::Test<TP> _TTT;
 
-	//TandoraParser parser;
-	//parser.inputFile("../unittest/tandora_src/ftest.as");
-
-	// JavaScriptCompiler compiler;
-	// compiler.optimize();
-	// compiler.compile(parser);
-
-	//stringstream str;
-
-	//File f(_ROOT"test\\utf8.txt", File::READ);
-
-	//cout << f.exists() << endl;
-	//cout << f.readc() << endl;
-
-	/*utf8::FileIO fs(_ROOT"test\\utf8.txt");
-	utf8::uchar ch = fs.readc();
-
-	_DUMP_UCHAR(ch);
-
-	_DUMP_UCHAR(0xc381);
-	 * */
-
-	/*
-	Timer t1;
-
-	for(int i= 0 ; i<_IT_ ; i++)
-		utf8::FileIO fio(_ROOT"test\\UIComponent.as");
+	//Assert(reader ,!=, NULL);
 
 
-	t1.stop();
-	cout << t1.last() << " | " << t1.last() / _IT_ << endl;
-	 * */
+	uchar* inp = new uchar[10];
+	inp[0] = 0xf6;
+	inp[1] = 0xfc;
+	inp[2] = 0xf3;
+	inp[3] = 0x151;
+	inp[4] = 0xfa;
+	inp[5] = 0xe9;
+	inp[6] = 0xe1;
+	inp[7] = 0x171;
+	inp[8] = 0xed;
+	inp[9] = 0;
 
+	Writer wt(inp, 9, Encode::UTF8);
 
-	//File file(_ROOT"test\\utf8.txt");
-
-	//cout << file.readc() << endl;
-
-	/*for(int i=0 ; i<3 ; i++)
+	/*unsigned char x;
+	while( (x = wt.next()) )
 	{
-		unicode::utf8c ch = file.readc();
-
-		_DUMP_UCHAR(ch);
+		_DUMP_UCHAR(x);
 	}*/
 
+	f.write(inp, 9);
+
+	//Temp<int (*)(int)> T1(TTest);
 
 
-	//ALLOC_ARRAY(_buff, char, 100);
+	//T1.z();
 
+//	T2.z();
 
-	//( false ? cout << "True" << endl : cout << "False" << endl );
+	trace("-----------");
 
-	//traceb(16);
+	Reader* reader = f2.reader();
+	Reader::Output ch;
 
-	//char ch;
-	//cin >> ch;
+	// 0.400, 0.004
+	TIMER_N_START(UReader, 1)
 
-
-	ex_try
+	while( (ch = reader->next()) )
 	{
-		trace(sizeof(uchar));
-
-		#define _IT_ 10000
-		TIMER_N_START(uchar, _IT_)
-
-		uchar* zc = new uchar[2000];
-		delete[] zc;
-
-		TIMER_END(uchar)
-
-		TIMER_N_START(uint, _IT_)
-
-		unsigned int* ui = new unsigned int[2000];
-		delete[] ui;
-
-		TIMER_END(uint)
-
-		char ch = 200;
-
-
-		FILE* _file = fopen(_ROOT "test\\UIComponent.as", "rb");
-
-		perror("x: ");
-
-		fseek(_file, 0, SEEK_END);
-		long _fsize = ftell(_file);
-		fseek(_file, 0, SEEK_SET);
-
-		unsigned char* _fileContent = new unsigned char[_fsize+1];
-		fread(_fileContent, 1, _fsize, _file);
-		_fileContent[_fsize] = '\0';
-
-		//trace(*uit->next());
-
-		unsigned char* _ittest = (unsigned char*)"Hello World";
-		trace(_ittest);
-
-		TIMER_N_START(Iterator, 100)
-
-		Iterator<unsigned char> uit(_fileContent, _fsize, Decoder::UTF8);
-
-		for( uchar* ch ; *(ch = uit.next()) ; )
-		{
-			//trace(*ch);
-		}
-
-		TIMER_END(Iterator)
-
-
-
-
-
-		/*
-		uchar	_oValue = 20;
-		uchar* _refValue;
-		uchar _cloneValue;
-
-		TIMER_N_START(passByRef, 200000000)
-			_refValue = &_oValue;
-			if( *_refValue == 0 )
-			{
-			}
-		TIMER_END(passByRef)
-
-		TIMER_N_START(clone, 200000000)
-			_cloneValue = _oValue;
-			if( _cloneValue == 0 )
-			{
-			}
-		TIMER_END(clone)
-		 */
+		_DUMP_UCHAR(ch);
 	}
-	ex_catch( Exception ex )
+
+	//while(){}
+
+		//delete reader;
+		reader->reset();
+
+	TIMER_END(UReader)
+
+	/*while( ch )
 	{
-		cout << ex.what() << endl;
-	}
+		_DUMP_UCHAR(ch);
+		reader->next(ch);
+	}*/
 
 	return 0;
 }

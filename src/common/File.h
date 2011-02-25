@@ -5,11 +5,16 @@
  * Created on 2011. február 16., 20:32
  */
 
-#include <stdio.h>
-#include "unicode/unicode.h"
+
 
 #ifndef FILE_H
 #define	FILE_H
+
+#include <stdio.h>
+
+#include "../settings.h"
+#include "unicode/unicode.h"
+#include "unicode/String.h"
 
 namespace common
 {
@@ -26,6 +31,12 @@ namespace common
 			APPEND = 2
 		} Mode;
 
+		typedef enum
+		{
+			AUTO_DETECT = 0, // try to determine encoding from BOM
+			UTF_8 = 1
+		} Encoding;
+
 		File(const char* file, Mode mode = READ, Encoding enc = UTF_8);
 
 		~File();
@@ -36,25 +47,32 @@ namespace common
 
 		bool writec(unsigned int ch);
 
-		size_t write(const void* buffer, size_t charsToWrite);
+		long int write(const void* buffer, size_t charsToWrite);
 
-		long int tell() const;
+		inline long int tell() const
+		{
+			return ftell(_file);
+		};
 
-		bool seek(long int offset, int origin);
+		inline bool seek(long int offset, int origin)
+		{
+			return fseek(_file, offset, origin) != -1;
+		}
 
-//		unicode::Iterator* iterator();
-//		unicode::ustring* getAllContent();
+		unicode::Reader* reader();
+		unicode::String* getAllContent();
+
+		long int write(unicode::Writer* writer, bool writeBOM = false);
+		long int write(unicode::uchar* ch, long int size, bool writeBOM = false);
 
 		inline long int size()
 		{
-			if( _size == 0 )
-			{
-				fseek(_file, 0, SEEK_END);
-				_size = ftell(_file);
-				fseek(_file, 0, SEEK_SET);
-			}
+			long int s;
+			fseek(_file, 0, SEEK_END);
+			s = ftell(_file);
+			fseek(_file, 0, SEEK_SET);
 
-			return _size;
+			return s;
 		};
 
 		inline long int length(){ return _length; };
@@ -112,9 +130,6 @@ namespace common
 		 */
 		Encoding _enc;
 
-
-		//void _readToBuffer();
-		//void _convertBufferToUTF8(unsigned char* buffer);
 	};
 }
 
