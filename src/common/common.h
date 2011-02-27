@@ -17,7 +17,6 @@
 #include "Exception.h"
 
 #include "unicode/unicode.h"
-#include "unicode/utf8.h"
 
 #include "File.h"
 

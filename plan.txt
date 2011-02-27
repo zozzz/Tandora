@@ -33,6 +33,7 @@ source struct:
 		|_ settings.h # global settings
 		|_ global.h # global macros, const etc...
         |_ Tandora.cpp # main file
+		
 
 A nyelv alapja az ActionScript 3, az ettől eltérő módosítások felsorolása:
 
@@ -445,4 +446,32 @@ Unicode Lib
 			|_ ide kerülnek a különböző encodingok decoder fügvényei: UTF8, UTF16 ...
 		
 		
+
+TREE
+============================================================
+		
+		parser = new Parser(new File("..."));
+		sourceTree = new SourceTree(parser);
+		sourceTree.createTree();
+		CompilationUnit rootNode = sourceTree.rootNode();
+		
+		nyelvenként különbözik a SourceTree pl.: JSONTree, TandoraTree, ...
+		valami módot találni majd arra, hogyan definiáljam a token típusokat és a létrehozó függvényeket hozzá
+		
+		
+		SourceTree
+			|_ setParser(parser) // ez egy stack-be fogja tolni a parsereket és mindig a legutoljára betoltat használja majd, tipikusan az #include preprocessor fogja majd használni
+			|_ revertParser() // visszaállítja az előző parsert
+			|_ create() -> return: CompilationUnit
+			|_ getRootNode()
+			|_ protected virtual abstract getTransformRule
+			|_ Node(class)
+				|_ get/set parent
+				|_ get/set previousSibling
+				|_ get/set nextSibling
+				|_ addChild()
+				|_ addChildAt()
+				|_ insertBefore()
+				|_ insertAfter()
+				
 

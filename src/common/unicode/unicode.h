@@ -67,15 +67,24 @@ namespace common { namespace unicode
 			 * @param length Input data length
 			 * @param cb Converter function (common::unicode::Encode::* / common::unicode::Decode::*)
 			 */
-			Converter(InputPtr buffer, long int length, Output (*cb)(InputPtr*, uchar&)):
+			Converter(const InputPtr buffer, long int length, Output (*cb)(InputPtr*, uchar&), bool clone = false):
 				_bufferLength(length),
-				_buffer(buffer),
-				_bufferStart(buffer),
 				_marked(NULL),
 				_mark(false),
 				_converterCache(0),
 				_convert(cb)
 			{
+				if( clone )
+				{
+					ALLOC_ARRAY(_buffer, Input, length);
+					_bufferStart = _buffer;
+					memcpy(_buffer, buffer, length * sizeof(Input));
+				}
+				else
+				{
+					_buffer = _bufferStart = buffer;
+				}
+
 				AssertExit((int)_buffer[length] ,==, 0);
 			};
 
@@ -144,15 +153,17 @@ namespace common { namespace unicode
 			 * Get marked buffer
 			 * @return Pointer array of output type
 			 */
-			inline OutputPtr markedBuffer()
+			OutputPtr markedBuffer()
 			{
 				OutputPtr ret;
 				ALLOC_ARRAY(ret, Output, _markedLength+1);
+				memcpy(ret, _marked, _markedLength * sizeof(Output));
 				ret[_markedLength] = 0;
-				while( _markedLength-- )
-					ret[_markedLength] = _marked[_markedLength];
 				return ret;
 			};
+
+			inline void setConverter(Output (*cb)(InputPtr*, uchar&)){ _convert = cb; }
+			inline Output (*getConverter())(InputPtr*, uchar&){ return _convert; }
 
 		private:
 			size_t		_bufferLength;
@@ -207,6 +218,9 @@ namespace common { namespace unicode
 #else
 	#define _DUMP_UCHAR(uchar)
 #endif
+
+#include "utf8.h"
+#include "String.h"
 
 #endif	/* UNICODE_H */
 

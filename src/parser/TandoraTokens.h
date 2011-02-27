@@ -13,6 +13,7 @@
 
 _TANDORA_NS_BEGIN
 
+
 //------------------------------------------------------------------------------
 // TOKEN MAIN TYPES
 //------------------------------------------------------------------------------
@@ -207,12 +208,10 @@ _TOKEN_CHAR_MAP_END
 #define O_LT			0x0200000
 // x > y
 #define O_GT			0x0400000
-// x:ClassName
-#define O_TYPE			0x0800000
 // ...rest args
-#define O_REST			0x1000000
-// **kwargs ; x**y
-#define O_DASTERIX		0x2000000
+#define O_REST			0x0800000
+// **kwargs ; x**y , bit:25
+#define O_DASTERIX		0x1000000
 
 //------------------------------------------------------------------------------
 // LITERALS

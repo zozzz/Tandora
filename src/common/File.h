@@ -130,6 +130,8 @@ namespace common
 		 */
 		Encoding _enc;
 
+		Encoding _detectEncoding();
+
 	};
 }
 

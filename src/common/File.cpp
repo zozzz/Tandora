@@ -1,7 +1,6 @@
 
 #include "File.h"
 #include "unicode/unicode.h"
-#include "unicode/utf8.h"
 #include <math.h>
 #include <errno.h>
 #include <string.h>
@@ -21,8 +20,7 @@ namespace common
 		_fileName(file),
 		_size(0),
 		_position(0),
-		_buffer(NULL),
-		_enc(enc)
+		_buffer(NULL)
 	{
 		_file = fopen(file, _fileModes[mode]);
 		if( _file == NULL )
@@ -37,6 +35,11 @@ namespace common
 		{
 			ex_throw(IOError::FileIsTooLarge, _fileName, File::formatSize(_size));
 		}
+
+		if( enc == AUTO_DETECT )
+			_enc = _detectEncoding();
+		else
+			_enc = enc;
 	}
 
 	File::~File()
@@ -67,12 +70,6 @@ namespace common
 		{
 			case UTF_8:
 				return new Reader(buffer, _size, Decode::UTF8);
-			break;
-
-			case AUTO_DETECT:
-			break;
-
-			default:
 			break;
 		}
 
@@ -143,5 +140,14 @@ namespace common
 	int File::readc()
 	{
 		return getc(_file);
+	}
+
+	File::Encoding File::_detectEncoding()
+	{
+		File::Encoding enc;
+
+		// TODO: implement this
+
+		return UTF_8;
 	}
 }

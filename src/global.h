@@ -44,16 +44,16 @@
 #define FASTCALL_A ATTRIBUTE(fastcall)
 #define FASTCALL_M MODIFIERS(__fastcall)
 
-#define INLINE_A ATTRIBUTE(always_inline)
-#define INLINE_M inline
+#ifdef _MSC_VER
+	#define INLINE __forceinline // use __forceinline (VC++ specific)
+#else
+	#define INLINE inline // use standard inline
+#endif
 
-
-_TANDORA_NS_BEGIN
 
 typedef unsigned short int SmallInt;
 typedef unsigned int Int;
 typedef uint64_t LargeInt;
 
-_TANDORA_NS_END
 
 #endif /* _GLOBAL__H_2011_Zozzz_ */
