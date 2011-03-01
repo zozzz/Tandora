@@ -14,6 +14,7 @@
 #include "../Exception.h"
 #include "../Allocator.h"
 #include "../debug/debug.h"
+#include "../../global.h"
 
 
 #define IS_ASCII_BYTE(byte) ((byte & 0x80) != 0x80)
@@ -72,6 +73,7 @@ namespace common { namespace unicode
 				_marked(NULL),
 				_mark(false),
 				_converterCache(0),
+				_current(0),
 				_convert(cb)
 			{
 				if( clone )
@@ -119,7 +121,7 @@ namespace common { namespace unicode
 					return _marked[_markedLength++] = _convert(&_buffer, _converterCache);
 				}
 
-				return _convert(&_buffer, _converterCache);
+				return _current = _convert(&_buffer, _converterCache);
 			}
 
 			/**
@@ -133,12 +135,19 @@ namespace common { namespace unicode
 			/**
 			 * Mark makes the conversion process, which queried the value of the markedBuffer function
 			 */
-			inline void startMark()
+			inline void startMark(bool includeCurrent = false)
 			{
 				_mark = true;
 				if( _marked == NULL )
 					ALLOC_ARRAY(_marked, Output, (_markedBuffLength = _bufferLength));
-				_markedLength = 0;
+
+				if( includeCurrent && _current )
+				{
+					_markedLength = 1;
+					_marked[0] = _current;
+				}
+				else
+					_markedLength = 0;
 			};
 
 			/**
@@ -153,14 +162,18 @@ namespace common { namespace unicode
 			 * Get marked buffer
 			 * @return Pointer array of output type
 			 */
-			OutputPtr markedBuffer()
+			OutputPtr markedBuffer(int offset = 0)
 			{
+				AssertExit((int)_markedLength + offset, >=, 0);
+
 				OutputPtr ret;
-				ALLOC_ARRAY(ret, Output, _markedLength+1);
-				memcpy(ret, _marked, _markedLength * sizeof(Output));
-				ret[_markedLength] = 0;
+				ALLOC_ARRAY(ret, Output, _markedLength+offset+1);
+				memcpy(ret, _marked, (_markedLength+offset) * sizeof(Output));
+				ret[_markedLength+offset] = 0;
 				return ret;
 			};
+
+			bool hasMarkedData(){ return _markedLength > 0; }
 
 			inline void setConverter(Output (*cb)(InputPtr*, uchar&)){ _convert = cb; }
 			inline Output (*getConverter())(InputPtr*, uchar&){ return _convert; }
@@ -174,6 +187,7 @@ namespace common { namespace unicode
 			size_t		_markedBuffLength;
 			bool		_mark;
 			uchar		_converterCache;
+			uchar		_current;
 
 			/**
 			 * Converter function pointer
@@ -221,6 +235,36 @@ namespace common { namespace unicode
 
 #include "utf8.h"
 #include "String.h"
+
+INLINE size_t ucslen(common::unicode::uchar* ch)
+{
+	AssertExit(ch, !=, NULL);
+
+	size_t len = 0;
+	while( ch[len++] != 0 );
+
+	return len;
+}
+
+INLINE wchar_t* ucstowchar (common::unicode::uchar* ch)
+{
+	size_t len = ucslen(ch);
+	if( len == 0 ) return NULL;
+
+	wchar_t* ret = new wchar_t[len];
+	ret = reinterpret_cast<wchar_t*>(ch);
+	return ret;
+}
+
+INLINE char* ucstochar (common::unicode::uchar* ch)
+{
+	size_t len = ucslen(ch);
+	if( len == 0 ) return NULL;
+
+	char* ret = new char[len * _UNICODE_CHAR_MAX_SIZE];
+	ret = reinterpret_cast<char*>(ch);
+	return ret;
+}
 
 #endif	/* UNICODE_H */
 

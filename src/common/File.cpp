@@ -71,6 +71,9 @@ namespace common
 			case UTF_8:
 				return new Reader(buffer, _size, Decode::UTF8);
 			break;
+
+			case AUTO_DETECT:
+			break;
 		}
 
 		return NULL;
@@ -144,7 +147,7 @@ namespace common
 
 	File::Encoding File::_detectEncoding()
 	{
-		File::Encoding enc;
+		//File::Encoding enc;
 
 		// TODO: implement this
 

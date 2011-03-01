@@ -15,7 +15,7 @@
 
 #define _TANDORA_NS_BEGIN namespace tandora{
 #define _TANDORA_NS_END }
-//#define _WAIT_FOR_KEYP char __wfkp__t; std::cout << "\nPress any key to continue... "; std::cin >> __wfkp__t;
+#define _WAIT_FOR_KEYP char __wfkp__t[1]; std::cout << "\nPress any key to continue... "; std::cin.getline(__wfkp__t,1);
 
 #if defined(__MINGW32__)
 

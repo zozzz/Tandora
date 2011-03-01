@@ -8,3 +8,4 @@ nbproject
 /dist/
 /Makefile
 /.dep.inc
+/*.stackdump

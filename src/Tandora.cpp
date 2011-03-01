@@ -1,5 +1,6 @@
 #include "Application.h"
 #include <string.h>
+#include "parser/JSONParser.h"
 
 
 #define _ROOT "D:\\Works\\cpp\\Tandora\\"
@@ -46,13 +47,23 @@ int main(int argc, char **argv)
 	#endif
 	#endif
 
-	struct xy
+	parser::JSONParser jsonParser;
+
+	jsonParser.setInput(new File(_ROOT "test\\json.test"));
+
+	parser::Token* t;
+
+	while( (t = jsonParser.next()) != NULL )
 	{
-		void operator()(){ trace("test"); }
-	};
+		//trace(t->type);
+		if( t->buffer != NULL )
+		{
+			//trace(ucstochar(t->buffer));
+			char* x = ucstochar(t->buffer);
+		}
+	}
 
-	xy z;
-	z();
 
+	_WAIT_FOR_KEYP exit(0);
 	return 0;
 }
