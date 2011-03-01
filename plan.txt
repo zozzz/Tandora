@@ -33,7 +33,7 @@ source struct:
 		|_ settings.h # global settings
 		|_ global.h # global macros, const etc...
         |_ Tandora.cpp # main file
-		
+
 
 A nyelv alapja az ActionScript 3, az ettől eltérő módosítások felsorolása:
 
@@ -416,11 +416,11 @@ Unicode Lib
 		1: kell egy string kezelő osztály
 		2: kell unicode szabványonként egy macro pl: utf8, ami utáan egy stringet írva abból unciode stringet csinál: ustring* str = utf8 L"ÁrvízTűrőTükörFÚRÓgép";
 		3: kell egy szénné optimalizált realtime encoder-decoder
-		
+
 	Először ezeket kell tesztelni:
 		1: milyen sebességű a pointerben tárolt függvény meghívása (ha lassú, hogyan lehet gyorsítani rajta)
 		2: calling conventions
-	
+
 	Definitions:
 		IS_ASCII_OCT
 		IS_UTF8_OCT
@@ -428,7 +428,7 @@ Unicode Lib
 		...
 		_CONVERTER_CC_
 		_CONVERTER_ATTR_
-	
+
 	NS: unicode
 		|_ String
 		|	|_ String(Converter& conv)
@@ -444,21 +444,21 @@ Unicode Lib
 		|	|_ ide kerülnek a különböző encodingok encoder fügvényei: UTF8, UTF16 ...
 		|_ NS: Decoder
 			|_ ide kerülnek a különböző encodingok decoder fügvényei: UTF8, UTF16 ...
-		
-		
+
+
 
 TREE
 ============================================================
-		
+
 		parser = new Parser(new File("..."));
 		sourceTree = new SourceTree(parser);
 		sourceTree.createTree();
 		CompilationUnit rootNode = sourceTree.rootNode();
-		
+
 		nyelvenként különbözik a SourceTree pl.: JSONTree, TandoraTree, ...
 		valami módot találni majd arra, hogyan definiáljam a token típusokat és a létrehozó függvényeket hozzá
-		
-		
+
+
 		SourceTree
 			|_ setParser(parser) // ez egy stack-be fogja tolni a parsereket és mindig a legutoljára betoltat használja majd, tipikusan az #include preprocessor fogja majd használni
 			|_ revertParser() // visszaállítja az előző parsert
@@ -473,5 +473,64 @@ TREE
 				|_ addChildAt()
 				|_ insertBefore()
 				|_ insertAfter()
-				
 
+
+PARSER
+============================================================
+
+
+
+
+	enum CharClass
+	{
+		CC_WHITE,	// space, tab, new line, carraige return
+		CC_LCRUB,	// {
+		CC_RCRUB,	// }
+		CC_LRUDB,	// (
+		CC_RRUDB,	// )
+		CC_LSQRB,	// [
+		CC_RSQRB,	// ]
+		CC_LANGB,	// <
+		CC_RANGB,	// >
+
+		CC_EXCLM,	// !
+		CC_DQUOT,	// "
+		CC_SQUOT,	// '
+		CC_HASHM,	// #
+		CC_DOLLAR,	// $
+		CC_PRCNT,	// %
+		CC_AND,		// &
+		CC_STAR,	// *
+		CC_PLUS,	// +
+		CC_COMMA,	// ,
+		CC_MINUS,	// -
+		CC_DOT,		// .
+		CC_SLASH,	// /
+		CC_BSLASH,	// \
+		CC_COLON,	// :
+		CC_SCOLON,	// ;
+		CC_EQUAL,	// =
+		CC_QUEST,	// ?
+		CC_AT,		// @
+
+		CC_NUM00,	// 0,
+		CC_NUM01,	// 1,
+		CC_NUM27,	// 2-7
+		CC_NUM89	// 8-9
+
+		NR_CHAR_CLASS
+	};
+
+	// action: max 14 (4 bit)
+	// token: max 255 (1 byte), így elvesztem a lehetőséget a bitoperátoros tesztelésre (megvizsgálni kell-e)
+	// char table: az összes olyan karakternek, amit használni akarok
+
+	enum Action
+	{
+		// tipust vált explicit módon
+		CHNG,		// ( CHNG | típus << 24 )
+		// karakter pozíció függő típus váltás, ellenőrzi az adott karakterről, hogy a mgfelelő pozícióban van-e
+		CHAR_AT,	// ( CHAR_AT [| pos(1-15) << 4 bitenként ]{1,5} | ha igaz váltson erre a típusra << 24 )
+		// hossz függő tipus váltás, ellenőrzi az eddig kinyert karakterlánc hosszát ebben a típúsban
+		LENGTH,		// ( LENGTH | len(1-4095) << 4 | ha egyenlő << 16 | egyébként << 24 )
+	};
