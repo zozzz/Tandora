@@ -30,6 +30,7 @@ int TTest(int z)
 	return 0;
 }
 
+
 int main(int argc, char **argv)
 {
 
@@ -47,21 +48,6 @@ int main(int argc, char **argv)
 	#endif
 	#endif
 
-	parser::JSONParser jsonParser;
-
-	jsonParser.setInput(new File(_ROOT "test\\json.test"));
-
-	parser::Token* t;
-
-	while( (t = jsonParser.next()) != NULL )
-	{
-		//trace(t->type);
-		if( t->buffer != NULL )
-		{
-			//trace(ucstochar(t->buffer));
-			char* x = ucstochar(t->buffer);
-		}
-	}
 
 
 	_WAIT_FOR_KEYP exit(0);

@@ -534,3 +534,65 @@ PARSER
 		// hossz függő tipus váltás, ellenőrzi az eddig kinyert karakterlánc hosszát ebben a típúsban
 		LENGTH,		// ( LENGTH | len(1-4095) << 4 | ha egyenlő << 16 | egyébként << 24 )
 	};
+
+
+	action típusok, amik kellenek:
+		- előző tokenre tudni kell testet csinálni (lehessen negálni)
+		- aktuális karakterre tudni kell pozíció testet csinálni (lehessen negálni)
+		- lezárás ( seek_back_one_char, current, endMark(offset) )
+		- token váltás (melyik tipusba, startMark(includeCurrent))
+		- sorszám növelése x-el
+		- egy sima OK, és egy sima ERR(esetleg error code)
+
+	block komment: /**/
+	line comment: //
+	regexp: /[]+/i
+	osztás:	/
+
+	undefined:
+		|->char: /
+			|->(undefined -> block_komment)
+				|-> char: /
+				|	|-> (block_komment->single_comment)
+				|		|-> adja hozzá a karaktereket egészen a sortörésig (egyszerű)
+				|-> char: *
+				|	|-> (block_komment->block_komment)
+				|		|-> adja hozzá a karaktereket egészen a következő */ jelsorig
+				|-> char: not / and not *
+					|-> (block_comment->regexp)
+						|-> regexp test on current position
+							|-> look behind: (token & (...)) == 0
+								|-> (regexp->div)
+									|-> zárja le az aktuális tokent
+
+
+	keyword:
+	catch
+	case
+	continue
+	const
+	class
+
+	udefined:
+		|-> char: c
+			|-> (undefined->KW_CATCH)
+				|-> char: a
+					|-> char: t
+					|	|-> char: c
+					|		|-> char: h
+					|			|-> char: !([\da-z_$])
+					|			|	|-> close
+					|			|-> char: a
+					|				|-> (KW_CATCH->identifier)
+					|					|-> adogatja hozzá a cuccokat, majd lezárja ...
+					|-> char: s
+						|-> (KW_CATCH->KW_CASE)
+							|-> ugyan mindent mint a catch-nél
+
+		c		a		t		h		{
+		(!3:ID)	(!1:ID)	(!2:ID)	(!4:ID)	(5:CLOSE,SEEK_BACK)
+
+
+
+
+
