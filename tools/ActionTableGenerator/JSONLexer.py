@@ -7,7 +7,7 @@ Created on 2011.03.01.
 from Lexer import *;
 
 KEYWORDS = [
-
+    "case","catch","continue"
 ]
 
 LITERALS = {
@@ -34,7 +34,7 @@ OPERATORS = {
     "COLON"         : ":",
     "PLUS"          : "+",
     "MINUS"         : "-",
-    "COMMA"         : "."
+    "COMMA"         : ","
 }
 
 WHITESPACES = {
