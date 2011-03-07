@@ -1,235 +1,197 @@
 # -*- coding: utf-8 -*-
 '''
-Created on 2011.03.01.
-
-@author: Zozzz
+@author zozzz
 '''
 
-ASCII_MIN = 0
-ASCII_MAX = 128
+from Token import Token
+import re
 
-INCREMENT_LINE_NUMBER = 1 << 0
-SKIP_TOKEN = 1 << 1
-CLOSE_PREV_TOKEN = 1 << 2
-CLOSE_CURR_TOKEN = 1 << 3
+__all__ = ["Lexer", "Token"]
 
-import re;
+class Lexer:
 
-class Match:
+    DEBUG = False
+    DEFAULT_TOKEN_NAME = "DEFAULT"
 
-    def __init__(self,
-                 startsWith,
-                 between=None,
-                 endsWith=None,
-                 needContent=False,
-                 skipClose=None,
-                 eatChars=None,
-                 charMaxCount=None):
+    ASCII_MIN = 0
+    ASCII_MAX = 128
 
-        self.start = _expParser(startsWith);
-        self.exact = not between and \
-                     not endsWith and \
-                     not eatChars and \
-                     not charMaxCount
+    def __init__(self, module):
+        self.default = None
+        self._module = module
+        self._tokens = {}
+        self._tokensByGroup = [] # touple list (group, token)
 
-        if between:
-            self.between = _expParser(between)
-        else:
-            self.between = None
+        # ordered list from tokens
+        # lowest width first
+        self._ordered = []
 
-        if endsWith:
-            self.end = _expParser(endsWith)
-        else:
-            self.end = None
+        self._makeTokenStructs(getattr(module, "TOKENS"))
 
-        if skipClose:
-            self.skipClose = _expParser(skipClose)
-        else:
-            self.skipClose = None
+        if self.default is None:
+            deft = Token("(?P<begin>)")
+            deft.name = self.DEFAULT_TOKEN_NAME
+            self.default = deft
+            self._tokens[deft.name] = deft
+            self._addToIndex(deft)
 
-        if charMaxCount:
-            self.charMaxCount = {}
-            for item in charMaxCount:
-                self.charMaxCount[ord(item["ch"])] = item["count"]
-        else:
-            self.charMaxCount = None
+    def tokenID(self, name):
+        idx = 0
+        for (g, n) in self._tokensByGroup:
+            if n == name:
+                return idx
+            idx += 1
 
-        self.needContent = needContent
+        raise Exception("Undefined token name: '"+str(name)+"'")
 
+    def tokenRange(self, group):
+        _min = -1
+        _max = -1
 
-class StringTableMatch:
+        idx = 0
+        findLast = False
+        for (g, n) in self._tokensByGroup:
+            if findLast is False and g == group:
+                findLast = True
+                _min = _max = idx
+            elif findLast and g == group:
+                _max += 1
+            idx += 1
 
-    def __init__(self, table, prefix=None):
+        if _min == -1:
+            raise Exception("Undefined token group: '"+str(group)+"'")
 
-        if isinstance(table, list):
-            tdict = {}
-            for item in table:
-                key = ""
-                if prefix:
-                    key += prefix
-                key += item.upper()
-                tdict[key] = item
-            table = tdict
-        elif isinstance(table, dict):
-            if prefix:
-                tdict = {}
-                for key, value in table.iteritems():
-                    tdict[prefix+key] = value
-                table = tdict
-
-        self.table = table
-        #self.prefix = prefix
-
-class CharRange:
-
-    def __init__(self, chars, ordered = True):
-        self.chars = chars
-        self.ordered = ordered
-
-    def __len__(self):
-        return len(self.chars)
-
-    def __str__(self):
-        return "CharRange[ordered:"+str(self.ordered)+"]: " + str(self.chars)
-
-    def flatten(self):
-        if self.ordered:
-            return self.chars
-        else:
-            return _flattenHelper(self.chars)
-
-    def _flattenHelper(self, x):
-        ret = []
-        for v in x:
-            if isinstance(v, list):
-                ret.extend(self._flattenHelper(v))
+        if _max == -1:
+            if findLast:
+                _max = len(self._tokensByGroup)-1
             else:
-                ret.append(v)
-        return ret
+                _max = _min
 
-#===============================================================================
-# Visszaad egy tömböt, ami azoknak a karaktereknek a kódját tartalmazza,
-# amit a kifejezés leírt 0-127 (1: speciális karakter, ami illeszkedik mindenre)
-# a 8-ik bit ha be van állítva 1-re akkor az a karakter nem szerepelhet benne
-#===============================================================================
-def _expParser(exp, makeUnique=True):
+        return (_min, _max)
 
-    if exp == "...":
-        return [1]
-    else:
-        # rx_range = compile("\[(\^)?(.*?)\]")
-        rangeRes = re.match(r"\[(\^)?(.*?)\]", exp)
-        if rangeRes:
-            if not rangeRes.group(2):
-                raise Exception("Undefined range: " + exp)
+    def token(self, name):
+        return self.token[name]
 
-            ret = []
-            res = re.findall(r"(.-.)|(.)", rangeRes.group(2))
+    def __getattribute__(self, name):
+        return self.token[name]
 
-            for r in res:
+    def _makeTokenStructs(self, tokens, parent=None):
 
-                if r[0]:
-                    r_parts = r[0].split("-")
-                    ret.extend(range(ord(r_parts[0]), ord(r_parts[1]) + 1))
-                elif r[1]:
-                    ret.append(ord(r[1]))
-                else:
-                    raise Exception("Ismeretlen hiba...")
+        for name, value in tokens.iteritems():
 
-            if makeUnique:
-                ret = _unique(ret)
+            if isinstance(value, Token):
+                value.name = name
+                value.group = parent
+                value.lexer = self
+                self._tokens[name] = value
+                self._addToIndex(value)
 
-            if rangeRes.group(1) == "^":
-                ret = map((lambda item: item | 128), ret)
+            elif isinstance(value, str):
+                tok = Token("(?P<begin>" + re.escape(value) + ")")
+                tok.name = name
+                tok.group = parent
+                tok.lexer = self
+                self._tokens[name] = value
+                self._addToIndex(value)
 
-            return CharRange(ret, False)
+            elif isinstance(value, TokenTable):
+                self._makeTokenStructs(value.table, name)
 
+            elif isinstance(value, dict):
+                self._makeTokenStructs(value, name)
+
+    def _addToIndex(self, token):
+        if token.maxWidth() == 0:
+            self.default = token
+
+        self._addToTokensByGroup(token)
+
+        inserted = False
+        for key, val in enumerate(self._ordered):
+            if val.maxWidth() > token.maxWidth():
+                inserted = True
+                self._ordered.insert(key, token)
+                break
+
+        if not inserted:
+            self._ordered.append(token)
+
+    def _addToTokensByGroup(self, token):
+        pos = 0
+
+        if token.group is None:
+            tgroup = token.name
         else:
+            tgroup = token.group
 
-            chars = exp.split("|")
-            grouping = len(re.findall(r"([^\\|]{2,})", exp)) > 0
-            ordered = len(chars) == 1 or grouping
+        if token.maxWidth() != 0:
+            findLast = False
+            i = 0
+            for (group_name, token_name) in self._tokensByGroup:
+                if findLast is False and group_name == tgroup:
+                    findLast = True
+                    pos = i
+                elif findLast and group_name == tgroup:
+                    pos += 1
+                    break
+                i += 1
 
-            ret = []
-            prevLength = 0
-            prevIndex = 0
-            c = 0
-            for ch in chars:
-                if grouping and prevLength > 1 and len(ch) == 1:
-                    ret[prevIndex] = [ret[prevIndex], ord(ch)]
-                elif grouping and len(ch) > 1 and c == len(chars)-1 and prevLength == 1:
-                    first = ch[0:1]
-                    last = ch[1:]
+            if pos == 0:
+                pos = len(self._tokensByGroup)
 
-                    ret[prevIndex] = [ret[prevIndex], ord(first)]
+        self._tokensByGroup.insert(pos, (tgroup, token.name))
 
-                    for chch in last:
-                        prevIndex = len(ret)
-                        ret.append(ord(chch))
-                else:
-                    for chch in ch:
-                        prevIndex = len(ret)
-                        ret.append(ord(chch))
-                prevLength = len(ch)
-                c += 1
+    # @param List chars
+    # @param List groups [begin, middle, end]
+    # amelyik exact az prioritást élvez
+    def find(self, chars, groups=None):
+        pass
 
-            return CharRange(ret, ordered);
-
-
-    '''
-    if exp == "...":
-        return CharRange(1, False)
-    else:
-        ret = []
-        ranges = re.findall(r"\[(\^)?(.*?)\]", exp)
-
-        if ranges:
-            for _range in ranges:
-                parsedRange = []
-                charRange = re.findall(r"(.-.)|(.)", _range[1])
-
-                for chr in charRange:
-                    if chr[0]:
-                        parts = chr[0].split("-")
-
-                        parsedRange.extend(range(ord(parts[0]), ord(parts[1]) + 1))
-                    elif chr[1]:
-                        parsedRange.append(ord(chr[1]))
-
-                parsedRange = _unique(parsedRange)
-
-                if _range[0] == "^":
-                    parsedRange = map((lambda item: item | 128), parsedRange)
-
-                _final = []
-                _or = _final
+    # @param Token token
+    # @param Int ch Karakterkód
+    # @param Int pos Aktuális pozíció, ami előtt egyeznie kell a token.begin résznek
+    #                és az alterToken.begin résznek + az alterToken.begin-nek illeszkednie
+    #                kell ebben a pozícióban lévő ch-ra
+    def findAlternative(self, token, ch, pos):
+        pass
 
 
-                i = True
-                c = 0
-                for ch in parsedRange:
-                    if c == 0 or c == len(parsedRange)-1:
-                        _or.append(ch)
-                    else:
-                        _nor = [ch]
-                        _or.append(_nor)
-                        _or = _nor
-                    i = not i
-                    c+=1
-                print _final
+class TokenTable:
 
-    '''
+    CASE_UPPER = "upper"
+    CASE_LOWER = "lower"
+    CASE_NO_CHANGE = "no_change"
 
+    def __init__(self, table, prefix=None, flag=0, chngCase="upper"):
+        self.table = {}
 
+        prep = {}
+        if isinstance(table, list):
+            for val in table:
+                prep[val] = Token("(?P<begin>" + re.escape(val) + ")", flag)
+        else:
+            prep = table
 
+        for key, value in prep.iteritems():
+            if prefix is not None:
+                nKey = prefix
+            else:
+                nKey = None
 
+            nValue = None
+            if chngCase == self.CASE_LOWER:
+                nKey += key.lower()
+            elif chngCase == self.CASE_UPPER:
+                nKey += key.upper()
+            else:
+                nKey += key
 
-def _unique(s):
-    u = {}
-    try:
-        for x in s:
-            u[x] = 1
-    except TypeError:
-        del u
-    else:
-        return u.keys()
+            if isinstance(value, Token):
+                nValue = value
+                value.flag |= flag
+            elif isinstance(value, str):
+                nValue = Token("(?P<begin>" + re.escape(value) + ")", flag)
+            else:
+                raise Exception("Unsupported type: " + value)
+
+            self.table[nKey] = nValue

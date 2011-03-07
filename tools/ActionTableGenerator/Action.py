@@ -18,7 +18,10 @@ class ActionNotMatchPrevToken(ActionMatchPrevToken):
         pass
 
 class ActionCharAt(Action):
-    def __init__(self):
+    def __init__(self, chngType=None):
+        pass
+
+    def addTest(self, pos, ch):
         pass
 
 class ActionNotCharAt(ActionCharAt):

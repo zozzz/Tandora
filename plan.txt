@@ -195,6 +195,24 @@ A nyelv alapja az ActionScript 3, az ettől eltérő módosítások felsorolása
 	var array:String["test", "test2"]; // string array létrehozása + inicializálás
 	var map:DisplayObject{}; // DisplayObject map létrehozása, nem égényel külön inicializációt
 	var btn:Button(label="Bezárás"); //
+	 
+	 ha osztályt példányosítunk lehetőség van egyből bizonyos változók beállítására:
+	 
+	 class Test
+	 {
+		[KeywordArg(required)] public var label:String;
+		[KeywordArg] protected var zIndex:Number;
+		[KeywordArg] private var dontKnow:int;
+		
+		public function Test(x:Number, y:Number)
+		{
+		}
+	 }
+	 
+	 var _test:Test(0, 0); // cak az x, y argumentumok kapnak értéket
+	 var _test:Test(label="Test"); // hiba mert az x, y-t kötelező megadni
+	 var _test:Test(0, 0, label="Test", dontKnow=1); // cool, ebben az esetben is használható a **kwargs
+	 var _test:Test(x=0, y=0, zIndex=1)
 
 
 Fordító felépítése:
