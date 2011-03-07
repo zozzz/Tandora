@@ -55,7 +55,7 @@ class ActionTable:
         f.write(self.EOL + self.EOL)
 
         f.write(self._createEnums(1) + self.EOL + self.EOL)
-        #f.write(self._createActionTable(1) + self.EOL)
+        f.write(self._createActionTable(1) + self.EOL)
 
         f.write(self.EOL + self.EOL)
 
@@ -108,7 +108,7 @@ class ActionTable:
     def _fillActionTable(self):
         for token in self.lexer._ordered[1:]:
             self.actionTable[token.name] = []
-            for x in range(Lexer.ASCII_MIN, Lexer.ASCII_MAX):
+            for _x in range(Lexer.ASCII_MIN, Lexer.ASCII_MAX):
                 self.actionTable[token.name].append(0)
             self._determineActionsFor(token)
 
@@ -145,18 +145,48 @@ class ActionTable:
             ml = token.maxWidth()
 
         variants = []
-        for pos in range(0, ml):
+        for pos in range(0, ml+1):
             vSnapShot = variants[:]
             for char in range(Lexer.ASCII_MIN, Lexer.ASCII_MAX):
                 #print vSnapShot
+                alterTokens = []
+                if pos > 0:
+                    self._findAlternativeTokens(token, vSnapShot, char, alterTokens);
+
                 if self._tokenIsMatch(token, vSnapShot, char, subGroup):
                     if len(variants) <= pos:
                         variants.append([])
                     variants[pos].append(char)
 
-        print token.name, variants
 
-    def _tokenIsMatch(self, tok, chars, ch, subGroup):
+                if len(alterTokens):
+                    print "alt["+token.name+":"+str(pos)+":"+chr(char)+"]: ", alterTokens
+
+        #print token.name, variants
+
+    def _tokenIsMatch(self, tok, chars, ch, subGroup=None):
         chr = chars[:]
         chr.append([ch])
         return tok.test(chr, subGroup)
+
+    def _findAlternativeTokens(self, token, chars, ch, result):
+        def _tok(tn):
+            return self.lexer._tokens[tn]
+
+        for altToken in self.lexer._ordered:
+            if altToken.name != token.name and self._tokenIsMatch(altToken, chars, ch) and result.count(altToken.name) == 0:
+                insertPos = 0
+
+                for tn in result:
+                    if _tok(tn).exact and altToken.exact:
+                        if _tok(tn).maxWidth() <= altToken.maxWidth():
+                            insertPos += 1
+                        else:
+                            break;
+                    elif _tok(tn).exact and altToken.exact is False:
+                        if _tok(tn).exact:
+                            insertPos += 1
+                        else:
+                            break
+
+                result.insert(insertPos, altToken.name)

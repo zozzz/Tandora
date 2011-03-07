@@ -211,6 +211,9 @@ class Token:
 
             return self._chrTest(ch, cat)
 
+        elif op == sre_constants.ANY:
+            return True
+
         else:
             return -1
 
@@ -226,8 +229,8 @@ class Token:
 
         return None
 
-    # Testel egy adott karakter sort, hogy illeszkedik-e
-    # chars = [10, 20, 30, 40, ...]
+    # Tesztel egy adott karakter sort, hogy illeszkedik-e
+    # chars = [[10], [20, 21], [30], [40, 41, 42], ...]
     def test(self, chars, group=None):
         p = self.parsed
 
@@ -257,44 +260,35 @@ class Token:
         p_pos = 0
         add_pos = 1
         asserts = []
+        #min_repeat = [] # ?
+        repeat = [] # any other ()+, ()*,
         appendAssert = None
         for (op, val) in pattern:
 
             for ch in chars[pos]:
-                add_pos = 1
+                add_pos = 0
                 ch_res = self._chrTest(ch, (op, val))
                 _print("ch_res", pos, ch, ch_res)
 
                 #print self.name, maxPos, "/", pos, ch, "=", ch_test_res
                 if ch_res == -1:
+                    _print(op)
                     if op == sre_constants.SUBPATTERN:
                         (res, pos) = self._test(val[1], chars, pos, level+1)
+                        add_pos = 0
                         _print("sub_res", res, add_pos)
 
                     elif op == sre_constants.BRANCH:
 
                         for branch_item in val[1]:
                             (res, pos) = self._test(branch_item, chars, pos, level+1)
+                            add_pos = 0
                             if res is True:
                                 _print("branch_res", res, add_pos)
                                 break
 
                     elif op == sre_constants.ASSERT or op == sre_constants.ASSERT_NOT:
                         asserts.append((op == sre_constants.ASSERT_NOT, val))
-
-                        """
-                        _print("assert", pos)
-
-                        assert_res = self._test(val[1], chars, pos, level+1)
-                        _print(assert_res)
-                        if op == sre_constants.ASSERT_NOT:
-                            res = not assert_res[0]
-                        else:
-                            res = assert_res[0]
-
-                        return (res, assert_res[1])
-                        """
-
                         _print("assertAdded", pos, maxPos)
 
                         if len(chars) <= pos + (val[0] * -1):
@@ -302,15 +296,86 @@ class Token:
                         else:
                             pos += (val[0] * -1)
 
-                        #res = True
-
                         if val[0] < 0:
                             continue
 
-                        """if pos == maxPos:
-                            print "assertAdded and overflow"
-                            return (False, pos)"""
+                    elif op == sre_constants.MAX_REPEAT or op == sre_constants.MIN_REPEAT:
+                        greedy = op == sre_constants.MAX_REPEAT
+
+                        (_start, _stop) = (val[0], val[1])
+
+                        if _stop >= 65535:
+                            _stop = -1
+
+                        if greedy:
+                            _print("repeat greedy", _start, _stop)
+                        else:
+                            _print("repeat non-greedy", _start, _stop)
+
+                        add_pos = 0
+                        res = True
+
+                        if _start != 0:
+                            res = False
+
+                            for cpa in range(0, _start):
+                                if pos + cpa >= len(chars):
+                                    break
+
+                                (res, pos) = self._test(val[2], chars, pos, level+1)
+
+                                if res is False:
+                                    break
+
+                        """if greedy:
+                            max_repeat.append((pos, _stop, val[2]))
+                        else:
+                            min_repeat.append((pos, _stop, val[2]))"""
+                        #repeat.append((pos, _stop, greedy, val[2]))
+                        if res is True:
+
+                            tested_len = _start
+                            _lastEndPos = -1
+                            while _stop > tested_len or (_stop == -1):
+                                _sp = pos
+
+                                if p_pos + 1 < len(pattern):
+                                    (res, pos) = self._test([pattern[p_pos+1]], chars, _sp, level+1)
+                                    #_print("find_end", res, pos)
+                                    if res:
+                                        _lastEndPos = _sp
+                                    elif pos+1 == maxPos and _lastEndPos != -1:
+                                        pos = _lastEndPos;
+                                        res = True
+                                        break;
+                                else:
+                                    res = pos == maxPos
+
+                                if not greedy and res:
+                                    if _lastEndPos != -1:
+                                        pos = _lastEndPos
+
+                                    if _stop != -1:
+                                        res = _stop == tested_len
+                                    else:
+                                        res = True
+                                    break
+
+                                elif not res:
+                                    (res, pos) = self._test(val[2], chars, _sp, level+1)
+                                    #_print("self", res, _sp, pos)
+
+                                    if res is False:
+                                        break
+
+                                    if pos == maxPos:
+                                        break
+
+                                tested_len += 1
+
+
                 else:
+                    add_pos = 1
                     res = ch_res
 
 
@@ -324,6 +389,13 @@ class Token:
                         res = not assert_res[0]
                     else:
                         res = assert_res[0]
+
+                """elif res == True and len(max_repeat) > 0:
+                    (_start, _stop, _greedy, _pattern) = max_repeat.pop()
+
+                    for _pos_ in range(_start, min(len(chars), _start + _stop)):
+                        (forward_res, forward_pos) = self._test()"""
+
 
 
                 _print("before_ret", pos, res, maxPos)
@@ -354,29 +426,11 @@ class Token:
 
 class MatchPattern:
 
-    @classmethod
-    def convertInOpToChars(cls, op):
-        (_in, _list) = op
-
-        ret = []
-        negate = False
-        for (_op, _val) in _list:
-            if _op == sre_constants.RANGE:
-                (_min, _max) = _val
-                ret.extend(range(_min, _max))
-            elif _op == sre_constants.LITERAL:
-                ret.append(_val)
-            elif _op == sre_constants.NEGATE:
-                negate = True
-
-        return (negate, ret)
-
     def __init__(self, token, parsed, ignoreCase=False):
         self._pattern = parsed
         self._ignoreCase = ignoreCase
-        self._minLength = -1
         self._token = token
-        self._chars = self._convertToCharList()
+        #self._chars = self._convertToCharList()
 
     def minWidth(self):
         (min, max) = self._pattern.getwidth()

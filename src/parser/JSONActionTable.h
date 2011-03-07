@@ -50,6 +50,8 @@ namespace parser { namespace json {
 		WS_TAB
 	};
 
+	static const int actionTable[27][128] = {
+	};
 
 
 } /* parser */

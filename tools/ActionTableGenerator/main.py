@@ -5,6 +5,7 @@ Created on 2011.03.01.
 '''
 
 import Lexer
+from Token import Token
 from ActionTable import *
 
 #Lexer.Lexer.DEBUG = True
@@ -16,8 +17,8 @@ import pprint
 def dump(x):
     pprint.pprint(x)
 
-TandoraSRCDir = "d:\\Works\\cpp\\Tandora\\src\\"
-SelfDir = "d:\\Works\\cpp\\Tandora\\tools\\ActionTableGenerator\\"
+TandoraSRCDir = "c:\\Users\\Zozzz\\Documents\\Tandora\\src\\"
+#TandoraSRCDir = "d:\\Works\\cpp\\Tandora\\src\\"
 
 def _out(x):
     return x, 1
@@ -49,28 +50,55 @@ if __name__ == '__main__':
     '''
 
     _patterns = [
-        "(1|2)|3"
+        "1*",
+        "1?",
+        "1+",
+        "1+?",
+        "1{1,}",
+        "1{1,2}",
+        "1*?"
     ]
 
 
     import re
 
-    '''for p in _patterns:
-        print "\n" + p + ":"
-        re.compile(p, re.DEBUG)
+    #for p in _patterns:
+    #    print "\n" + p + ":"
+    #    re.compile(p, re.DEBUG)
 
-    '''
+
 
     CMP1 = json.lexer._tokens["LI_FLOAT"]
     CMP2 = json.lexer._tokens["LI_HEX"]
     LI_FALSE = json.lexer._tokens["LI_FALSE"]
 
+    #print CMP1.test();
+
     #CMP1.parsed.dump()
 
     # (?P<begin>((?<=0)x)|((?<=[0-9])\.)|\.)(?P<middle>([0-9.]+(e(\+|-)?[0-9]+)?))
-    print [[ord('0')], [ord("x")]]
-    print CMP1.test([[ord('0')]])
-    print CMP1.test([[ord('z'), ord('0'), ord('1')], [ord('.')]])
+    #print [[ord('0')], [ord("x")]]
+    #print CMP1.test([[ord('0')]])
+    #print CMP1.test([[ord('z'), ord('0'), ord('1')], [ord('.')]])
 
+    test = "<h1>Hello World</h1>fuck"
+
+    """chrs = [
+        [ord("h")],
+        [ord("e")],
+        [ord("l")],
+        [ord("l")],
+        [ord("o")]
+    ]"""
+
+    chrs = []
+    for ch in test:
+        chrs.append([ord(ch)])
+
+
+
+
+    #print json.lexer._tokens["IDENTIFIER"].test(chrs)
+    #print Token("(?P<begin>\<.*?\>)").test(chrs)
 
     #print CMP1.compare(CMP2)

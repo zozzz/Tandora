@@ -16,7 +16,7 @@ LITERALS = {
     "LI_NULL": Match("null"),
     "LI_STRING": Match("\"|\'", "...", "\"|\'", True, "\\"),
     "LI_INT": Match("[1-9]", "[0-9]", needContent=True),
-    "LI_FLOAT": Match("[0.]|.|[1-9]", "[0-9.eE+-]", needContent=True, charMaxCount=[
+    "LI_FLOAT": Match("[0.]|\.|[1-9]", "[0-9.eE+-]", needContent=True, charMaxCount=[
         {"ch":".", "count":1},
         {"ch":"e", "count":1},
         {"ch":"E", "count":1},
@@ -97,7 +97,7 @@ LITERALS = {
     "NULL"   : "null",
     "STRING" : Token("(?P<begin>'|\")(?P<middle>.*?)(?P<end>(?P=begin))", Token.NEED_AS_STRING),
     "INT"    : Token("(?P<begin>[1-9])(?P<middle>[0-9]*)", Token.NEED_AS_STRING),
-    "FLOAT"  : Token("(?P<begin>((?<=[0-9])\.)|\.)(?P<middle>([0-9.]+(e(\+|-)?[0-9]+)?))", Token.IGNORE_CASE | Token.NEED_AS_STRING),
+    "FLOAT"  : Token("(?P<begin>(?<=[0-9])\.)(?P<middle>([0-9.]+(e(\+|-)?[0-9]+)?))", Token.IGNORE_CASE | Token.NEED_AS_STRING),
     "HEX"    : Token("(?P<begin>0x)(?P<middle>[0-9abcdef]*)", Token.IGNORE_CASE | Token.NEED_AS_STRING)
 }
 
