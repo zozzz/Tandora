@@ -14,41 +14,106 @@
 
 namespace parser
 {
-	struct Token
+	//------------------------------------------------------------------------------
+	// All action is 32 bit wide:
+	//------------------------------------------------------------------------------
+	enum Action
 	{
-		unsigned short int type;
-		unsigned short int value;
-		common::unicode::uchar* buffer;
+		//------------------------------------------------------------------------------
+		// Throw unexpected char error
+		// 0000 0000 0000 0000 0000 0000 0000 0000
+		//									  \__/
+		//									    |
+		//									 Action Type
+		//------------------------------------------------------------------------------
+		ERROR = 0,
 
-		//INLINE bool operator == (const Token& cmp){ return (type == cmp.type && value == cmp.value); }
+		//------------------------------------------------------------------------------
+		// Everything is ok
+		// 0000 0000 0000 0000 0000 0000 0000 0001
+		//									  \__/
+		//									    |
+		//									 Action Type
+		//------------------------------------------------------------------------------
+		CONTINUE,
+
+		//------------------------------------------------------------------------------
+		// Close token
+		// Params:
+		//		- token type
+		//		- offset: how many chars track back or forward
+		// 0000 0000 0000 0000 0000 0000 0000 0010
+		//					   \_______/ \__/ \__/
+		//						 |		  |     |
+		//				 Token type	 Offset	 Action Type
+		//
+		//------------------------------------------------------------------------------
+		CLOSE,
+
+		//------------------------------------------------------------------------------
+		// Test char position inside token
+		// Params:
+		//		- token type
+		//		- position[5]: max 5 position test available (0-15)
+		// 0000 0000 0000 0000 0000 0000 0000 0011
+		// \_______/ \__/ \__/ \__/ \__/ \__/ \__/
+		//	   |	   \____|___||___|____/    |
+		//	Token type		 Positions		 Action Type
+		//------------------------------------------------------------------------------
+		CHAR_AT,
+
+		//------------------------------------------------------------------------------
+		// Change token type
+		// Params:
+		//		- token type
+		// 0000 0000 0000 0000 0000 0000 0000 0100
+		//						    \_______/ \__/
+		//							    |       |
+		//						Token type	 Action Type
+		//------------------------------------------------------------------------------
+		CHNG_TYPE
 	};
 
-	template<class _NextTokenGetter, class _Token = Token>
+	struct Token
+	{
+		unsigned char type;
+		unsigned char* buffer;
+	};
+
+	template<class _Token, int _TokenNumber>
 	class TokenReader
 	{
 	public:
 		typedef _Token Token;
 
-		TokenReader():_nextToken() { trace("Construct::TokenReader"); };
-		//~TokenReader();
-
 		void setInput(common::File* file)
 		{
-			if( _nextToken.input != NULL )
-				delete _nextToken.input;
-			_nextToken.input = file->reader();
+			AssertExit(file ,!=, NULL);
+
+			ALLOC_ARRAY(buffer, unsigned char, file->size());
+
+			file->read(buffer, file->size());
 		}
 
-		void setInput(common::unicode::uchar* ch);
+		//void setInput(common::unicode::uchar* ch);
 
-		INLINE Token* next()
+		Token next()
 		{
-			return _nextToken();
+			trace(buffer[0]);
+			trace(_actionTable[0][buffer[0]]);
 		}
 
 
 	protected:
-		_NextTokenGetter _nextToken;
+		typedef unsigned int ActionTable;
+		unsigned char* buffer;
+		ActionTable (*_actionTable)[128];
+
+		TokenReader(ActionTable actionTable[_TokenNumber][128]):
+			_actionTable(actionTable)
+		{
+			trace("TokenReader");
+		}
 	};
 
 }

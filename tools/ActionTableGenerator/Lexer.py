@@ -35,6 +35,9 @@ class Lexer:
             self._tokens[deft.name] = deft
             self._addToIndex(deft)
 
+        #for t in self._ordered:
+        #    print t
+
     def tokenID(self, name):
         idx = 0
         for (g, n) in self._tokensByGroup:

@@ -85,13 +85,26 @@ class ActionTable:
         ]
 
         _group = None
+        _ml = len(self.lexer._tokensByGroup)
+        i=0
         for (g, n) in self.lexer._tokensByGroup:
             if _group != g:
                 _group = g
                 (r_min, r_max) = self.lexer.tokenRange(g)
-                ret.append( self.EOL + ((indent+1) * self.INDENT) + "// " + g + " ("+str(r_min)+" - "+str(r_max)+")")
+                _comment = ""
+                if i != 0:
+                    _comment = self.EOL
+                _comment += ((indent+1) * self.INDENT) + "// " + g + " ("+str(r_min)+" - "+str(r_max)+")"
+                ret.append(_comment)
 
-            ret.append(((indent+1) * self.INDENT) + n)
+            _append = ((indent+1) * self.INDENT) + n
+            if i == 0:
+                _append += " = 0"
+            _append += ","
+            ret.append(_append)
+            i += 1
+
+        ret.append( self.EOL + ((indent+1) * self.INDENT) + "TT_COUNT")
 
         ret.append((indent * self.INDENT) + "};")
 
@@ -101,7 +114,7 @@ class ActionTable:
         self._fillActionTable()
 
         ret = [
-            (indent * self.INDENT) + "static const int actionTable["+str(len(self.lexer._tokensByGroup))+"]["+str(Lexer.ASCII_MAX)+"] = {"
+            (indent * self.INDENT) + "static unsigned int actionTable["+str(len(self.lexer._tokensByGroup))+"]["+str(Lexer.ASCII_MAX)+"] = {"
         ]
 
         tokNameMaxWidth = 0
@@ -147,7 +160,52 @@ class ActionTable:
 
         for token in self.lexer._ordered[1:]:
             if token.infinity:
-                pass
+
+                pos = 0
+                for pgroup in ["begin", "middle", "end"]:
+                    if token[pgroup] is None:
+                        continue
+
+                    if pgroup == "middle":
+                        _max = token[pgroup].minWidth()
+                    else:
+                        _max = token[pgroup].maxWidth()
+
+                    if _max == 0:
+                        for char in range(Lexer.ASCII_MIN, Lexer.ASCII_MAX):
+                            (_tmatch, _mlength) = token.test([[char]], pgroup, Token.RESULT_EXTEND)
+                            if _tmatch and _mlength == 1:
+                                if self.actionTable[token.name][char] == 0:
+                                    self.actionTable[token.name][char] = ActionContinue()
+                                    self._addAvailChar(token, char, pos+1)
+                    else:
+                        for sub_pos in range(0, _max):
+                            _addChars = []
+
+                            for char in range(Lexer.ASCII_MIN, Lexer.ASCII_MAX):
+                                if pos == 0:
+                                    if token.test([[char]]) \
+                                       and self.actionTable[self.lexer.default.name][char] == 0:
+                                        self.actionTable[self.lexer.default.name][char] = ActionChangeTokenType(token)
+                                        _addChars.append((token, pos, char))
+
+                                else:
+                                    avail = self._findAvailTokens(char, None, token, None, pos)
+                                    if len(avail):
+                                        print token.name, "["+chr(char)+":"+str(pos)+"]", "->", avail, self._tokenChars[token.name]
+                                        if avail[0] == token.name:
+                                            _addChars.append((token, pos, char))
+                                        else:
+                                            _alt = self.lexer._tokens[avail[0]]
+
+                                            _addChars.append((_alt, pos, char))
+
+                        for (_cha_token, _cha_pos, _cha_ch) in _addChars:
+                            self._addAvailChar(_cha_token, _cha_ch, _cha_pos)
+
+                        pos += 1
+
+
             else:
                 _max = token.maxWidth()
 
@@ -162,7 +220,7 @@ class ActionTable:
                                 _alts = []
                                 self._findAvailTokens(char, _alts)
                                 if _max == 1 and token.exact and len(_alts) == 1:
-                                    self.actionTable[self.lexer.default.name][char] = ActionClose(True, 0, token)
+                                    self.actionTable[self.lexer.default.name][char] = ActionClose(0, token)
                                     self._closedTokens.append(token.name)
                                     break
                                 elif self.actionTable[self.lexer.default.name][char] == 0:
@@ -177,10 +235,9 @@ class ActionTable:
                             avail = self._findAvailTokens(char, token=token, length=pos)
 
                             if len(avail):
-                                print token.name, "["+chr(char)+":"+str(pos)+"]", "->", avail, self._tokenChars[token.name]
+                                #print token.name, "["+chr(char)+":"+str(pos)+"]", "->", avail, self._tokenChars[token.name]
                                 if avail[0] == token.name:
                                     #print token.name, "["+chr(char)+":"+str(pos)+"]", "->", avail, self._tokenChars[token.name]
-                                    print "\tchar at"
 
                                     if self.actionTable[token.name][char] == 0:
                                         self.actionTable[token.name][char] = ActionCharAt(token, pos)
@@ -188,7 +245,7 @@ class ActionTable:
                                     elif isinstance(self.actionTable[token.name][char], ActionCharAt)\
                                          and self.actionTable[token.name][char].tid == token.id():
                                         self.actionTable[token.name][char].addPosition(pos)
-                                        
+
                                     else:
                                         self.actionTable[token.name][char] = ActionCharAt(token, pos)
 
@@ -198,9 +255,7 @@ class ActionTable:
                                     _alt = self.lexer._tokens[avail[0]]
                                     _addChars.append((_alt, pos, char))
 
-                                    if self.actionTable[token.name][char] == 0 \
-                                       or ( self.actionTable[token.name][char].token \
-                                            and self.actionTable[token.name][char].tid > _alt.id()):
+                                    if self.actionTable[token.name][char] == 0:
 
                                         if _alt.infinity:
                                             self.actionTable[token.name][char] = ActionChangeTokenType(_alt)
@@ -214,82 +269,20 @@ class ActionTable:
                     for (_cha_token, _cha_pos, _cha_ch) in _addChars:
                         self._addAvailChar(_cha_token, _cha_ch, _cha_pos)
 
+                    if token.exact and pos == token.maxWidth():
+                        self._closedTokens.append(token.name)
 
+            """ EZ KELL CSAK RONTJA AZ ÁTLÁTHATÓSÁGOT
+            for (char, action) in enumerate(self.actionTable[token.name]):
+                if action != 0:
+                    continue
 
+                _alts = self._findAvailTokens(char, skipClosed=False)
+                if len(_alts):
+                    for _alt in _alts:
+                        self.actionTable[token.name][char] = ActionClose(-1, self.lexer._tokens[_alt])
+            """
 
-                    #if close:
-                    #    self._closedTokens.append(token.name)
-
-
-        # ==========================================================================
-        # OLD
-        # ==========================================================================
-        """
-        pos = 0
-        #_max = len(self.lexer._tokensByGroup) * Lexer.ASCII_MAX
-        _max = 10
-        while pos < _max:
-
-            if pos == 0:
-                for char in range(Lexer.ASCII_MIN, Lexer.ASCII_MAX):
-                    avail = []
-                    self._findAvailTokens(char, avail)
-
-                    if len(avail):
-                        token = self.lexer._tokens[avail[0]]
-
-                        if token.maxWidth() == 1 and len(avail) == 1:
-                            self.actionTable[self.lexer.default.name][char] = ActionClose(True, 0, token.id())
-                            self._closedTokens.append(token.name)
-                        else:
-                            self.actionTable[self.lexer.default.name][char] = ActionChangeTokenType(token.id())
-
-                        self._addAvailChar(token, char, pos)
-                    else:
-                        self.actionTable[self.lexer.default.name][char] = ActionError()
-
-            else:
-                for char in range(Lexer.ASCII_MIN, Lexer.ASCII_MAX):
-                    for token in self.lexer._ordered:
-                        if token.infinity or self._closedTokens.count(token.name) > 0:
-                            continue
-
-                        avail = []
-                        self._findAvailTokens(char, avail, token)
-
-                        if len(avail) > 0:
-                            avName = avail.pop(0)
-                            if token.name == avName:
-                                if self.actionTable[token.name][char] == 0:
-                                    self.actionTable[token.name][char] = ActionCharAt(token.id(), pos)
-                                elif isinstance(self.actionTable[token.name][char], ActionCharAt):
-                                    self.actionTable[token.name][char].addPosition(pos)
-                                else:
-                                    self.actionTable[token.name][char] = ActionCharAt(token.id(), pos)
-
-                                self._addAvailChar(token, char, pos)
-                            else:
-                                avtoken = self.lexer._tokens[avName]
-                                self._addAvailChar(avtoken, char, pos)
-                                self.actionTable[token.name][char] = ActionChangeTokenType(avtoken.id())
-
-                        #print token.maxWidth()-1, "==", pos
-                            print token.name, "->", avName, pos, chr(char)
-
-                        if token.maxWidth()-1 == pos:
-                            self._closedTokens.append(token.name)
-
-                    for token in self.lexer._ordered:
-                        if token.exact:
-                            continue
-
-                        self._findAvailTokens(char, avail, token)
-
-            pos += 1
-
-            #if pos == _max:
-            #    raise Exception("Something is bad...")
-        """
 
         #return
         for (key, value) in self.actionTable.iteritems():
@@ -298,6 +291,9 @@ class ActionTable:
                 print action,
             print ""
 
+
+    def _insertTokenDefaultAction(self, token):
+        pass
 
 
     """
@@ -376,7 +372,7 @@ class ActionTable:
         (match, length) = tok.test(chr, subGroup, Token.RESULT_EXTEND)
         return len(chars) == length
 
-    def _findAvailTokens(self, ch, result=None, token=None, groups=None, length=-1):
+    def _findAvailTokens(self, ch, result=None, token=None, groups=None, length=-1, skipClosed=True):
         def _tok(tn):
             return self.lexer._tokens[tn]
 
@@ -402,7 +398,7 @@ class ActionTable:
         selfMatched = False
         for altToken in self.lexer._ordered:
 
-            if self._closedTokens.count(altToken.name) != 0:
+            if skipClosed and self._closedTokens.count(altToken.name) != 0:
                 continue
 
             (_match, _length) = altToken.test(chars, groups, Token.RESULT_EXTEND)

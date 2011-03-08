@@ -5,9 +5,9 @@ class Action:
     PAD_LENGTH = 8
     ACTIONS = [
         "ERROR",
-        "MATCH_PREV",
-        "CHAR_AT",
+        "CONTINUE",
         "CLOSE",
+        "CHAR_AT",
         "CHNG_TYPE"
     ]
 
@@ -68,7 +68,7 @@ class ActionNotMatchPrevToken(ActionMatchPrevToken):
 # ==========================================================================
 class ActionCharAt(Action):
     MAX_POS = 15
-    MAX_POS_NUMBER = 3
+    MAX_POS_NUMBER = 5
 
     def __init__(self, token, pos=None):
         self.posList = []
@@ -86,6 +86,16 @@ class ActionCharAt(Action):
             raise Exception("Position is too large "+str(pos)+"!")
 
         self.posList.append(pos)
+
+    def _getNumber(self):
+        ret = self.id
+        lsh = 1
+        for pos in self.posList:
+            ret |= pos << lsh
+            lsh += 1
+
+        ret |= self.tid << 24
+        return ret
 
     def __str__(self):
         return "<charAt "+str(self.tid)+", "+("|".join([str(p) for p in self.posList]))+">"
@@ -108,14 +118,21 @@ class ActionNotCharAt(ActionCharAt):
 #
 # ==========================================================================
 class ActionClose(Action):
-    def __init__(self, current=False, endOfsset=0, token=None):
+    def __init__(self, endOfsset=0, token=None):
         Action.__init__(self, Action.id("CLOSE"), token)
 
-        self.current = current
         self.endOfsset = endOfsset
+        if abs(endOfsset) > 15:
+            raise Exception("Max allowed offset size is 15!")
+
+    def _getNumber(self):
+        ret = self.id
+        ret |= self.endOfsset << 4
+        ret |= self.tid <<8
+        return ret
 
     def __str__(self):
-        return "<close "+str(self.current)+", "+str(self.endOfsset)+", "+str(self.tid)+">"
+        return "<close "+str(self.endOfsset)+", "+str(self.tid)+">"
 
 
 
@@ -125,6 +142,11 @@ class ActionClose(Action):
 class ActionChangeTokenType(Action):
     def __init__(self, token):
         Action.__init__(self, Action.id("CHNG_TYPE"), token)
+
+    def _getNumber(self):
+        ret = self.id
+        ret |= self.tid << 4
+        return ret
 
     def __str__(self):
         return "<chngType "+str(self.tid)+">"
@@ -148,7 +170,7 @@ class ActionIncrementLN(Action):
 # ==========================================================================
 class ActionContinue(Action):
     def __init__(self):
-        Action.__init__(self, 0)
+        Action.__init__(self, Action.id("CONTINUE"))
 
     def __str__(self):
         return "<continue>"

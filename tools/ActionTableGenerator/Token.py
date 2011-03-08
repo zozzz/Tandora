@@ -427,7 +427,7 @@ class Token:
     def __str__(self):
         return "<Lexer.Token "+str(self.name)+" begin="+str(bool(self.begin))+" middle="+str(bool(self.middle))+" end="+str(bool(self.end))+">"
 
-    def __getattr__(self, name):
+    def __getitem__(self, name):
         if name == "begin":
             return self.begin
         elif name == "middle":
@@ -435,7 +435,7 @@ class Token:
         elif name == "end":
             return self.end
         else:
-            raise AttributeError()
+            raise AttributeError("Undefined attr: " + name)
 
 
 class MatchPattern:

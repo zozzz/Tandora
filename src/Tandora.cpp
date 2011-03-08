@@ -9,6 +9,7 @@
 using namespace std;
 using namespace common;
 using namespace common::unicode;
+using namespace parser;
 //using namespace tandora;
 
 template<typename T>
@@ -30,7 +31,6 @@ int TTest(int z)
 	return 0;
 }
 
-
 int main(int argc, char **argv)
 {
 
@@ -48,6 +48,11 @@ int main(int argc, char **argv)
 	#endif
 	#endif
 
+	JSONParser* json = JSONParser::create(new File(_ROOT "test\\json.test"));
+
+	json->next();
+
+	//xyz(parser::json::actionTable, parser::json::TT_COUNT);
 
 
 	_WAIT_FOR_KEYP exit(0);

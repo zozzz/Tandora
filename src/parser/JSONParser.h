@@ -9,7 +9,8 @@
 #define	JSONPARSER_H
 
 #include "parser.h"
-#include "JSONTokens.h"
+#include "JSONActionTable.h"
+
 
 namespace parser
 {
@@ -132,19 +133,7 @@ namespace parser
 	};
 */
 
-	// max 15 (4 bit)
-	enum Action
-	{
-		SKIP = 0,
-		// tipust vált explicit módon
-		CHNG,		// ( CHNG | típus << 24 )
-		// karakter pozíció függő típus váltás, ellenőrzi az adott karakterről, hogy a mgfelelő pozícióban van-e
-		CHAR_AT,	// ( CHAR_AT [| pos(1-15) << 4 bitenként ]{1,5} | ha igaz váltson erre a típusra << 24 )
-		// hossz függő tipus váltás, ellenőrzi az eddig kinyert karakterlánc hosszát ebben a típúsban
-		LENGTH,		// ( LENGTH | len(1-4095) << 4 | ha egyenlő << 16 | egyébként << 24 )
-	};
-
-	namespace JSON
+	/*namespace JSON
 	{
 		enum TokenType
 		{
@@ -203,7 +192,31 @@ namespace parser
 		};
 	}
 
-	typedef TokenReader<JSON::GetNextToken, Token> JSONParser;
+	typedef TokenReader<JSON::GetNextToken, Token> JSONParser;*/
+
+
+
+	//typedef TokenReader<json::actionTable, Token> JSONParser;
+	class JSONParser: public TokenReader<Token, json::TT_COUNT>
+	{
+	public:
+		static JSONParser* create(common::File* file)
+		{
+			JSONParser* parser = new JSONParser(json::actionTable);
+			parser->setInput(file);
+			return parser;
+		}
+
+	protected:
+		JSONParser(ActionTable actionTable[json::TT_COUNT][128]):
+			Base(actionTable)
+		{
+				trace("JSONParser");
+		}
+
+	private:
+		typedef TokenReader<Token, json::TT_COUNT> Base;
+	};
 }
 
 #endif	/* JSONPARSER_H */
