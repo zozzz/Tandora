@@ -145,6 +145,86 @@ class ActionTable:
                 self.actionTable[token.name].append(0)
 
 
+        for token in self.lexer._ordered[1:]:
+            if token.infinity:
+                pass
+            else:
+                _max = token.maxWidth()
+
+                for pos in range(0, _max):
+
+                    _addChars = []
+
+                    for char in range(Lexer.ASCII_MIN, Lexer.ASCII_MAX):
+
+                        if pos == 0:
+                            if token.test([[char]]):
+                                _alts = []
+                                self._findAvailTokens(char, _alts)
+                                if _max == 1 and token.exact and len(_alts) == 1:
+                                    self.actionTable[self.lexer.default.name][char] = ActionClose(True, 0, token)
+                                    self._closedTokens.append(token.name)
+                                    break
+                                elif self.actionTable[self.lexer.default.name][char] == 0:
+                                    self.actionTable[self.lexer.default.name][char] = ActionChangeTokenType(token)
+
+                                for _alt in _alts:
+                                    self._addAvailChar(self.lexer._tokens[_alt], char, pos)
+
+                            continue
+
+                        else:
+                            avail = self._findAvailTokens(char, token=token, length=pos)
+
+                            if len(avail):
+                                print token.name, "["+chr(char)+":"+str(pos)+"]", "->", avail, self._tokenChars[token.name]
+                                if avail[0] == token.name:
+                                    #print token.name, "["+chr(char)+":"+str(pos)+"]", "->", avail, self._tokenChars[token.name]
+                                    print "\tchar at"
+
+                                    if self.actionTable[token.name][char] == 0:
+                                        self.actionTable[token.name][char] = ActionCharAt(token, pos)
+
+                                    elif isinstance(self.actionTable[token.name][char], ActionCharAt)\
+                                         and self.actionTable[token.name][char].tid == token.id():
+                                        self.actionTable[token.name][char].addPosition(pos)
+                                        
+                                    else:
+                                        self.actionTable[token.name][char] = ActionCharAt(token, pos)
+
+                                    _addChars.append((token, pos, char))
+
+                                else:
+                                    _alt = self.lexer._tokens[avail[0]]
+                                    _addChars.append((_alt, pos, char))
+
+                                    if self.actionTable[token.name][char] == 0 \
+                                       or ( self.actionTable[token.name][char].token \
+                                            and self.actionTable[token.name][char].tid > _alt.id()):
+
+                                        if _alt.infinity:
+                                            self.actionTable[token.name][char] = ActionChangeTokenType(_alt)
+                                        else:
+                                            self.actionTable[token.name][char] = ActionCharAt(_alt, pos)
+
+
+
+
+                    #print "_postAddChars:", pos, _addChars
+                    for (_cha_token, _cha_pos, _cha_ch) in _addChars:
+                        self._addAvailChar(_cha_token, _cha_ch, _cha_pos)
+
+
+
+
+                    #if close:
+                    #    self._closedTokens.append(token.name)
+
+
+        # ==========================================================================
+        # OLD
+        # ==========================================================================
+        """
         pos = 0
         #_max = len(self.lexer._tokensByGroup) * Lexer.ASCII_MAX
         _max = 10
@@ -184,6 +264,8 @@ class ActionTable:
                                     self.actionTable[token.name][char] = ActionCharAt(token.id(), pos)
                                 elif isinstance(self.actionTable[token.name][char], ActionCharAt):
                                     self.actionTable[token.name][char].addPosition(pos)
+                                else:
+                                    self.actionTable[token.name][char] = ActionCharAt(token.id(), pos)
 
                                 self._addAvailChar(token, char, pos)
                             else:
@@ -207,6 +289,7 @@ class ActionTable:
 
             #if pos == _max:
             #    raise Exception("Something is bad...")
+        """
 
         #return
         for (key, value) in self.actionTable.iteritems():
@@ -293,9 +376,12 @@ class ActionTable:
         (match, length) = tok.test(chr, subGroup, Token.RESULT_EXTEND)
         return len(chars) == length
 
-    def _findAvailTokens(self, ch, result, token=None):
+    def _findAvailTokens(self, ch, result=None, token=None, groups=None, length=-1):
         def _tok(tn):
             return self.lexer._tokens[tn]
+
+        if result is None:
+            result = []
 
         if token is None or self._tokenChars.has_key(token.name) is False:
             chars = [[ch]]
@@ -307,17 +393,21 @@ class ActionTable:
             else:
                 chars.append([ch])
 
-        if token:
-            print token.name,
-        print chars
         _chsLength = len(chars)
+
+        if length != -1:
+            if _chsLength-1 != length:
+                return result
+
         selfMatched = False
         for altToken in self.lexer._ordered:
 
             if self._closedTokens.count(altToken.name) != 0:
                 continue
 
-            (_match, _length) = altToken.test(chars, None, Token.RESULT_EXTEND)
+            (_match, _length) = altToken.test(chars, groups, Token.RESULT_EXTEND)
+            #if _match and token:
+            #    print token.name, altToken.name, _chsLength, _length
             if _match and _length == _chsLength and result.count(altToken.name) == 0:
                 if token is not None and altToken.name == token.name:
                     selfMatched = True
@@ -341,6 +431,9 @@ class ActionTable:
 
         if selfMatched:
             result.insert(0, token.name);
+
+        return result
+
 
     def _addAvailChar(self, tok, ch, pos):
         if self._tokenChars.has_key(tok.name) is False:

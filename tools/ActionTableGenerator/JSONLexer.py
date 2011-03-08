@@ -122,5 +122,5 @@ TOKENS = {
     "WHITESPACE"    : TokenTable(WHITESPACES, "WS_", Token.SKIP),
     "COMMENT"       : TokenTable(COMMENTS, "CT_", Token.SKIP),
 
-    "KEYWORDS"      : TokenTable(["case", "catch", "continue"], "KW_")
+    "KEYWORDS"      : TokenTable(["case", "catch", "continue", "this", "is"], "KW_")
 }
