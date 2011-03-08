@@ -6,44 +6,79 @@ class Action:
 
     def asHex(self):
         r = "0x%0." + str(Action.PAD_LENGTH) + "X"
-        return r % (self.number)
+        return r % (self._getNumber())
+
+    def _getNumber(self):
+        return self.number
+
+    def __str__(self):
+        return "<Action>"
 
 
 class ActionMatchPrevToken(Action):
     def __init__(self):
-        pass
+        Action.__init__(self, 0)
+
+
+    def __str__(self):
+        return "<ActionMatchPrevToken>"
 
 class ActionNotMatchPrevToken(ActionMatchPrevToken):
     def __init__(self):
-        pass
+        ActionMatchPrevToken.__init__(self, 0)
+
+
+    def __str__(self):
+        return "<ActionNotMatchPrevToken>"
 
 class ActionCharAt(Action):
-    def __init__(self, chngType=None):
+    def __init__(self, chngType, pos=None):
+        Action.__init__(self, 0)
+
+    def addPosition(self, pos):
         pass
 
-    def addTest(self, pos, ch):
-        pass
+    def __str__(self):
+        return "<ActionCharAt>"
 
 class ActionNotCharAt(ActionCharAt):
     def __init__(self):
-        pass
+        ActionCharAt.__init__(self, 0)
+
+    def __str__(self):
+        return "<ActionNotCharAt>"
 
 class ActionClose(Action):
     def __init__(self, current=False, endOfsset=0, chngType=None):
-        self.id = 0
+        Action.__init__(self, 0)
+
+    def __str__(self):
+        return "<ActionClose>"
 
 class ActionChangeTokenType(Action):
     def __init__(self, chngType):
-        pass
+        Action.__init__(self, 0)
+
+    def __str__(self):
+        return "<ActionChangeTokenType>"
 
 class ActionIncrementLN(Action):
     def __init__(self):
-        pass
+        Action.__init__(self, 0)
+
+    def __str__(self):
+        return "<ActionIncrementLN>"
 
 class ActionContinue(Action):
     def __init__(self):
-        pass
+        Action.__init__(self, 0)
+
+    def __str__(self):
+        return "<ActionContinue>"
 
 class ActionError(Action):
     def __init__(self):
-        pass
+        Action.__init__(self, 0)
+
+    def __str__(self):
+        return "<ActionError>"

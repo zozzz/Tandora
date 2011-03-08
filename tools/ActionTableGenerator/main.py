@@ -17,8 +17,8 @@ import pprint
 def dump(x):
     pprint.pprint(x)
 
-TandoraSRCDir = "c:\\Users\\Zozzz\\Documents\\Tandora\\src\\"
-#TandoraSRCDir = "d:\\Works\\cpp\\Tandora\\src\\"
+#TandoraSRCDir = "c:\\Users\\Zozzz\\Documents\\Tandora\\src\\"
+TandoraSRCDir = "d:\\Works\\cpp\\Tandora\\src\\"
 
 def _out(x):
     return x, 1
@@ -81,7 +81,7 @@ if __name__ == '__main__':
     #print CMP1.test([[ord('0')]])
     #print CMP1.test([[ord('z'), ord('0'), ord('1')], [ord('.')]])
 
-    test = "<h1>Hello World</h1>fuck"
+    test = "alma"
 
     """chrs = [
         [ord("h")],
@@ -95,10 +95,19 @@ if __name__ == '__main__':
     for ch in test:
         chrs.append([ord(ch)])
 
+    chrs.append([0])
+
+    print len(chrs)
+    print json.lexer._tokens["IDENTIFIER"].test(chrs, resultType=Token.RESULT_EXTEND)
+
+    #print json.lexer._tokens["LI_FLOAT"].minWidth()
+    #print json.lexer._tokens["LI_INT"].minWidth()
+
+    #json.lexer._tokens["LI_FLOAT"].parsed.dump()
+    #print json.lexer._tokens["LI_FLOAT"].test(chrs, resultType=Token.RESULT_EXTEND)
 
 
-
-    #print json.lexer._tokens["IDENTIFIER"].test(chrs)
-    #print Token("(?P<begin>\<.*?\>)").test(chrs)
+    #print json.lexer._tokens["IDENTIFIER"].test(chrs, resultType=Token.RESULT_EXTEND)
+    #print Token("(?P<begin>\<.*?\>[a-z\s]+)", Token.IGNORE_CASE).test(chrs, resultType=Token.RESULT_EXTEND)
 
     #print CMP1.compare(CMP2)

@@ -12,6 +12,10 @@ class Token:
     INC_LINE        = 1 << 2
     NEED_AS_STRING  = 1 << 3
 
+    RESULT_NORMAL = 0
+    RESULT_EXTEND = 1
+
+    INF_WIDTH = 65535
 
     #pattern: regex kifejezés string formában lehetséges named groupok:
     #           - begin: ezt a részt vizsgálja, hogy elkezdje viszgálni a middle részt ha meg van adva
@@ -62,6 +66,17 @@ class Token:
                     _ex = False
                     break
             self.exact = _ex
+
+        if self.begin.maxWidth() >= self.INF_WIDTH:
+            raise Exception("Begin group don't support ifinity match!")
+
+        if self.end and self.end.maxWidth() >= self.INF_WIDTH:
+            raise Exception("End group don't support infinity match!");
+
+        if self.middle and self.middle.maxWidth() >= self.INF_WIDTH:
+            self.infinity = True
+        else:
+            self.infinity = False
 
 
     def maxWidth(self):
@@ -195,21 +210,22 @@ class Token:
             return ch >= val[0] and ch <= val[1]
 
         elif op == sre_constants.CATEGORY:
-            cat = None
+            _pattern = None
             if val == sre_constants.CATEGORY_DIGIT:
-                (_tmp, cat) = re.compile("[0-9]")
+                _pattern = "[0-9]"
             elif val == sre_constants.CATEGORY_NOT_DIGIT:
-                (_tmp, cat) = re.compile("[^0-9]")
+                _pattern = "[^0-9]"
             elif val == sre_constants.CATEGORY_WORD:
-                (_tmp, cat) = re.compile("[a-zA-Z_]")
+                _pattern = "[a-zA-Z_]"
             elif val == sre_constants.CATEGORY_NOT_WORD:
-                (_tmp, cat) = re.compile("[^a-zA-Z_]")
+                _pattern = "[^a-zA-Z_]"
             elif val == sre_constants.CATEGORY_SPACE:
-                (_tmp, cat) = re.compile("[\r\n\t ]")
+                _pattern = "[\r\n\t ]"
             else:
                 raise Exception("Unsupported category: " + val)
 
-            return self._chrTest(ch, cat)
+            cat = sre_parse.parse(_pattern)
+            return self._chrTest(ch, cat[0])
 
         elif op == sre_constants.ANY:
             return True
@@ -231,7 +247,10 @@ class Token:
 
     # Tesztel egy adott karakter sort, hogy illeszkedik-e
     # chars = [[10], [20, 21], [30], [40, 41, 42], ...]
-    def test(self, chars, group=None):
+    # @param Int resultType Available: RESULT_NORMAL, RESULT_EXTEND
+    #        - RESULT_NORMAL: True / False
+    #        - RESULT_EXTEND: (True / False, matchedLength)
+    def test(self, chars, group=None, resultType=0):
         p = self.parsed
 
         if group is not None:
@@ -242,7 +261,10 @@ class Token:
             elif group == "end":
                 p = self.end._pattern
 
-        return self._test(p, chars, 0, 0)[0]
+        if resultType == self.RESULT_NORMAL:
+            return self._test(p, chars, 0, 0)[0]
+        elif resultType == self.RESULT_EXTEND:
+            return self._test(p, chars, 0, 0)
 
     def _test(self, pattern, chars, pos, level):
 
@@ -255,56 +277,53 @@ class Token:
 
         chars = chars[:]
 
-        maxPos = len(chars)-1
+        maxPos = len(chars)
         res = False
         p_pos = 0
-        add_pos = 1
         asserts = []
-        #min_repeat = [] # ?
-        repeat = [] # any other ()+, ()*,
         appendAssert = None
         for (op, val) in pattern:
 
             for ch in chars[pos]:
-                add_pos = 0
-                ch_res = self._chrTest(ch, (op, val))
-                _print("ch_res", pos, ch, ch_res)
+                res = self._chrTest(ch, (op, val))
+                _print("ch_res", pos, res, ch, chr(ch))
 
-                #print self.name, maxPos, "/", pos, ch, "=", ch_test_res
-                if ch_res == -1:
-                    _print(op)
+                if res == -1:
+                    res = False
                     if op == sre_constants.SUBPATTERN:
                         (res, pos) = self._test(val[1], chars, pos, level+1)
-                        add_pos = 0
-                        _print("sub_res", res, add_pos)
+                        _print("sub_res", res, pos)
 
                     elif op == sre_constants.BRANCH:
 
                         for branch_item in val[1]:
+                            _print("branch", pos, branch_item)
                             (res, pos) = self._test(branch_item, chars, pos, level+1)
-                            add_pos = 0
                             if res is True:
-                                _print("branch_res", res, add_pos)
+                                _print("branch_res", res, pos)
                                 break
 
                     elif op == sre_constants.ASSERT or op == sre_constants.ASSERT_NOT:
                         asserts.append((op == sre_constants.ASSERT_NOT, val))
-                        _print("assertAdded", pos, maxPos)
+                        _print("assertAdded", pos, val[0])
 
-                        if len(chars) <= pos + (val[0] * -1):
+                        if maxPos <= pos + (val[0] * -1):
                             return (False, pos)
                         else:
                             pos += (val[0] * -1)
 
-                        if val[0] < 0:
-                            continue
+                        if val[0] < 0 and p_pos + 1 < len(pattern):
+                            _sp = pos
+                            (pos, res) = self._test([pattern[p_pos+1]], chars, pos, level+1)
+                            if res is False:
+                                pos = _sp
 
                     elif op == sre_constants.MAX_REPEAT or op == sre_constants.MIN_REPEAT:
                         greedy = op == sre_constants.MAX_REPEAT
 
                         (_start, _stop) = (val[0], val[1])
 
-                        if _stop >= 65535:
+                        if _stop >= self.INF_WIDTH:
                             _stop = -1
 
                         if greedy:
@@ -319,32 +338,31 @@ class Token:
                             res = False
 
                             for cpa in range(0, _start):
-                                if pos + cpa >= len(chars):
-                                    break
-
                                 (res, pos) = self._test(val[2], chars, pos, level+1)
+
+                                if pos >= maxPos:
+                                    break
 
                                 if res is False:
                                     break
 
-                        """if greedy:
-                            max_repeat.append((pos, _stop, val[2]))
-                        else:
-                            min_repeat.append((pos, _stop, val[2]))"""
-                        #repeat.append((pos, _stop, greedy, val[2]))
-                        if res is True:
+                        if res is True and pos < maxPos:
 
                             tested_len = _start
                             _lastEndPos = -1
                             while _stop > tested_len or (_stop == -1):
+                                if _stop == -1 and pos >= maxPos:
+                                    break
+
                                 _sp = pos
 
                                 if p_pos + 1 < len(pattern):
+                                    _print("pre_find_end", _lastEndPos, pos, _stop)
                                     (res, pos) = self._test([pattern[p_pos+1]], chars, _sp, level+1)
-                                    #_print("find_end", res, pos)
+                                    _print("find_end", res, pos)
                                     if res:
                                         _lastEndPos = _sp
-                                    elif pos+1 == maxPos and _lastEndPos != -1:
+                                    elif pos+1 >= maxPos and _lastEndPos != -1:
                                         pos = _lastEndPos;
                                         res = True
                                         break;
@@ -363,47 +381,43 @@ class Token:
 
                                 elif not res:
                                     (res, pos) = self._test(val[2], chars, _sp, level+1)
-                                    #_print("self", res, _sp, pos)
+                                    _print("test:", res, pos, _sp, maxPos)
 
                                     if res is False:
+                                        pos = _sp
                                         break
 
-                                    if pos == maxPos:
+                                    if pos >= maxPos:
                                         break
 
                                 tested_len += 1
 
 
-                else:
-                    add_pos = 1
-                    res = ch_res
+                elif res:
+                    pos += 1
 
 
                 if res == True and len(asserts) > 0:
                     (negate, _assert) = asserts.pop()
-                    assert_res = self._test(_assert[1], chars, pos + _assert[0], level+1)
+                    _sp = pos
+                    assert_res = self._test(_assert[1], chars, pos - 1 + _assert[0], level+1)
 
-                    _print("assert", _assert[1], pos, maxPos, assert_res)
+                    _print("assert", _assert[1], pos - 1, maxPos, assert_res)
 
                     if negate:
                         res = not assert_res[0]
                     else:
                         res = assert_res[0]
 
-                """elif res == True and len(max_repeat) > 0:
-                    (_start, _stop, _greedy, _pattern) = max_repeat.pop()
-
-                    for _pos_ in range(_start, min(len(chars), _start + _stop)):
-                        (forward_res, forward_pos) = self._test()"""
-
-
+                    if res is False:
+                        pos = _sp
 
                 _print("before_ret", pos, res, maxPos)
                 if res == False or pos >= maxPos:
                     _print("return:", (res, pos))
                     return (res, pos)
 
-                pos += add_pos
+                #pos += add_pos
 
             p_pos += 1
 
