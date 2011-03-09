@@ -80,11 +80,23 @@ namespace parser
 		unsigned char* buffer;
 	};
 
-	template<class _Token, int _TokenNumber>
+	/*
+	 * Action table:
+	 * header:
+	 *	- extern unsigned int table[x][y]
+	 * source:
+	 *  - unsigned int table = {...};
+	 */
+	
+	template<int _TokenCount, unsigned int _ActionTable[_TokenCount][128], class _Token>
 	class TokenReader
 	{
 	public:
 		typedef _Token Token;
+		typedef TokenReader<_TokenCount, _ActionTable, _Token> Self;
+		
+		static Self* createFromFile(const char* fileName);
+		static Self* createFromString(const char* buffer);
 
 		void setInput(common::File* file)
 		{
@@ -99,18 +111,14 @@ namespace parser
 
 		Token next()
 		{
-			trace(buffer[0]);
-			trace(_actionTable[0][buffer[0]]);
+			trace(_ActionTable[0][0]);
 		}
 
 
 	protected:
-		typedef unsigned int ActionTable;
 		unsigned char* buffer;
-		ActionTable (*_actionTable)[128];
-
-		TokenReader(ActionTable actionTable[_TokenNumber][128]):
-			_actionTable(actionTable)
+		
+		TokenReader()
 		{
 			trace("TokenReader");
 		}

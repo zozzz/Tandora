@@ -43,36 +43,66 @@ class ActionTable:
             print "Module not changed: " + self.lexer._module.__name__
 
     def _create(self):
-        print "Generate " + self.outFile + ".h ...",
-        #try:
-        f = open(self.outFile+".h", "w")
-        f.write("// AUTO GENERATED CODE, DO NOT EDIT!!!\n\n");
+        try:
+            print "Generate " + self.outFile + ".h ...",
 
-        f.write("#ifndef _" + os.path.basename(self.outFile).upper() + "_" + self.EOL)
-        f.write("#define _" + os.path.basename(self.outFile).upper() + "_" + self.EOL + self.EOL)
+            f = open(self.outFile+".h", "w")
+            f.write("// AUTO GENERATED CODE, DO NOT EDIT!!!" + self.EOL * 2);
 
-        ns = self.namespace.split(".")
+            f.write("#ifndef _" + os.path.basename(self.outFile).upper() + "_" + self.EOL)
+            f.write("#define _" + os.path.basename(self.outFile).upper() + "_" + self.EOL * 2)
 
-        for x in ns:
-            f.write("namespace " + x + " { ")
-        f.write(self.EOL + self.EOL)
+            ns = self.namespace.split(".")
 
-        f.write(self._createEnums(1) + self.EOL + self.EOL)
-        f.write(self._createActionTable(1) + self.EOL)
+            for x in ns:
+                f.write("namespace " + x + " { ")
+            f.write(self.EOL + self.EOL)
 
-        f.write(self.EOL + self.EOL)
+            f.write(self._createEnums(1) + self.EOL * 2)
+            f.write(self.INDENT + "extern unsigned int actionTable["+str(len(self.lexer._tokensByGroup))+"]["+str(Lexer.ASCII_MAX)+"];");
 
-        for x in ns:
-            f.write("} /* "+ x +" */" + self.EOL)
+            f.write(self.EOL * 2)
 
-        f.write(self.EOL)
+            for x in ns:
+                f.write("} /* "+ x +" */" + self.EOL)
 
-        f.write("#endif")
-        f.close()
-        #except:
-            #print "[ERROR]", sys.exc_info()[1]
-            #return
-        print "[OK]"
+            f.write(self.EOL)
+
+            f.write("#endif")
+            f.close()
+
+            print "[OK]"
+        except:
+            print "[ERROR]", sys.exc_info()[1]
+            return
+
+
+        try:
+            print "Generate " + self.outFile + ".cpp ...",
+
+            f = open(self.outFile+".cpp", "w")
+            f.write("// AUTO GENERATED CODE, DO NOT EDIT!!!" + self.EOL * 2);
+
+            f.write('#include "'+os.path.basename(self.outFile)+'.h"' + self.EOL * 2);
+
+            ns = self.namespace.split(".")
+
+            for x in ns:
+                f.write("namespace " + x + " { ")
+            f.write(self.EOL + self.EOL)
+
+            f.write(self._createActionTable(1) + self.EOL * 2)
+
+            for x in ns:
+                f.write("} /* "+ x +" */" + self.EOL)
+
+            f.close()
+
+            print "[OK]"
+        except:
+            print "[ERROR]", sys.exc_info()[1]
+            return
+
 
 
     # ==========================================================================
@@ -114,7 +144,7 @@ class ActionTable:
         self._fillActionTable()
 
         ret = [
-            (indent * self.INDENT) + "static unsigned int actionTable["+str(len(self.lexer._tokensByGroup))+"]["+str(Lexer.ASCII_MAX)+"] = {"
+            (indent * self.INDENT) + "unsigned int actionTable["+str(len(self.lexer._tokensByGroup))+"]["+str(Lexer.ASCII_MAX)+"] = {"
         ]
 
         tokNameMaxWidth = 0

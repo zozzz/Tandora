@@ -197,7 +197,7 @@ namespace parser
 
 
 	//typedef TokenReader<json::actionTable, Token> JSONParser;
-	class JSONParser: public TokenReader<Token, json::TT_COUNT>
+	/*class JSONParser: public TokenReader<Token, json::TT_COUNT>
 	{
 	public:
 		static JSONParser* create(common::File* file)
@@ -216,7 +216,9 @@ namespace parser
 
 	private:
 		typedef TokenReader<Token, json::TT_COUNT> Base;
-	};
+	};*/
+	
+	typedef TokenReader<json::TT_COUNT, json::actionTable, Token> JSONParser;
 }
 
 #endif	/* JSONPARSER_H */

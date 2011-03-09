@@ -17,8 +17,8 @@ import pprint
 def dump(x):
     pprint.pprint(x)
 
-#TandoraSRCDir = "c:\\Users\\Zozzz\\Documents\\Tandora\\src\\"
-TandoraSRCDir = "d:\\Works\\cpp\\Tandora\\src\\"
+TandoraSRCDir = "c:\\Users\\Zozzz\\Documents\\Tandora\\src\\"
+#TandoraSRCDir = "d:\\Works\\cpp\\Tandora\\src\\"
 
 def _out(x):
     return x, 1
@@ -59,14 +59,11 @@ if __name__ == '__main__':
         "1*?"
     ]
 
-
     import re
 
     #for p in _patterns:
     #    print "\n" + p + ":"
     #    re.compile(p, re.DEBUG)
-
-
 
     CMP1 = json.lexer._tokens["LI_FLOAT"]
     CMP2 = json.lexer._tokens["LI_HEX"]

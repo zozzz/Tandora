@@ -48,9 +48,11 @@ int main(int argc, char **argv)
 	#endif
 	#endif
 
-	JSONParser* json = JSONParser::create(new File(_ROOT "test\\json.test"));
+	/*JSONParser* json = JSONParser::create(new File(_ROOT "test\\json.test"));
 
-	json->next();
+	json->next();*/
+	
+	JSONParser* json = JSONParser.createFromFile("Test file");
 
 	//xyz(parser::json::actionTable, parser::json::TT_COUNT);
 
