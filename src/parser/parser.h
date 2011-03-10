@@ -87,6 +87,8 @@ namespace parser
 	struct Token
 	{
 		unsigned char type;
+		unsigned int line;
+		unsigned short int col;
 		unsigned char* buffer;
 	};
 
@@ -121,8 +123,8 @@ namespace parser
 				sprintf(_ch, "%d", ch);
 				buff += "n_";
 				buff += _pos;
-				buff += "_";
-				buff += _ch;
+				/*buff += "_";
+				buff += _ch;*/
 			}
 
 			void writeBeginId(std::string& buff)
@@ -136,11 +138,63 @@ namespace parser
 
 					buff += "n_";
 					buff += _begin_pos;
-					buff += "_";
-					buff += _begin_ch;
+					/*buff += "_";
+					buff += _begin_ch;*/
 				}
 			}
 
+			void writeActionStyle(std::string& buff)
+			{
+				switch( action & BM_ACTION )
+				{
+					case ERROR: 
+						buff += "fillcolor=\"#e62929\""; 						
+					break;
+					
+					case CONTINUE: 
+						buff += "fillcolor=\"#c1e20d\",fontcolor=\"#333333\""; 
+					break;
+					
+					case CLOSE: 
+						buff += "fillcolor=\"#325866\""; 
+					break;
+					
+					case CHAR_AT: 
+						buff += "fillcolor=\"#47ba1a\""; 
+					break;
+					
+					case CHNG_TYPE: 
+						buff += "fillcolor=\"#dc7904\""; 
+					break;
+				}
+			}
+			
+			void writeActionLabel(std::string& buff)
+			{
+				switch( action & BM_ACTION )
+				{
+					case ERROR: 
+						buff += "ERROR"; 						
+					break;
+					
+					case CONTINUE: 
+						buff += "OK"; 
+					break;
+					
+					case CLOSE: 
+						buff += "10"; 
+					break;
+					
+					case CHAR_AT: 
+						buff += "1|3|5"; 
+					break;
+					
+					case CHNG_TYPE: 
+						buff += "23"; 
+					break;
+				}
+			}
+			
 			void write(std::string& buff)
 			{
 				if( begin_ch != 0 )
@@ -159,16 +213,16 @@ namespace parser
 				buff += _pos;
 				buff += "|";
 
-
-				ch &= 127;
-				if( ch == 10 )
-					buff += "\\n";
+				if( (unsigned)ch > 127 )
+					buff += "UTF8";
+				else if( ch == 10 )
+					buff += "\\\\n";
 				else if( ch == 13 )
-					buff += "\\r";
+					buff += "\\\\r";
 				else if( ch == 32 )
 					buff += "SPACE";
 				else if( ch == 9 )
-					buff += "\\t";
+					buff += "\\\\t";
 				else if( ch == 34 || ch == 123 || ch == 125 || ch == 60 || ch == 62 || ch == 92 )
 				{
 					buff += "\\";
@@ -178,7 +232,7 @@ namespace parser
 					buff += ch;
 				buff += "|";
 
-				switch( action & BM_ACTION )
+				/*switch( action & BM_ACTION )
 				{
 					case ERROR: buff += "ERROR"; break;
 					case CONTINUE: buff += "CONTINUE"; break;
@@ -186,9 +240,14 @@ namespace parser
 					case CHAR_AT: buff += "CHAR_AT"; break;
 					case CHNG_TYPE: buff += "CHNG_TYPE"; break;
 					default: buff += "undefined"; break;
-				}
+				}*/
+				writeActionLabel(buff);
+				
+				buff += "}\",";
+				
+				writeActionStyle(buff);
 
-				buff += "}\"];\n";
+				buff += "];\n";
 			}
 		} Node;
 
@@ -207,12 +266,34 @@ namespace parser
 
 		void writeToFile()
 		{
-			_buffer += "rankdir=LR;\n node [shape=record, fontsize=10, height=0.1];\n";
+			_buffer += "rankdir=LR; ranksep=0.5; dpi=72; nodesep=0.1;\n";
+			_buffer += "node[shape=record, fontsize=10, height=0.25, width=1.8, fontname=\"monospace\", style=filled, fontcolor=\"#FFFFFF\", fixedsize=true];\n";
 
 			_fillData();
 			_buffer += "}";
 			common::File f(_outFile, common::File::WRITE);
 			f.write(_buffer.c_str(), _buffer.size());
+			
+			/*
+			const char* _dot = "\"C:\\Program Files (x86)\\Graphviz2.26.3\\bin\\dot.exe\" -v";
+			int cmdLen = strlen(_outFile) * 2 + 24 + strlen(_dot);
+			char* cmd = new char[cmdLen+1];
+			strcat(cmd, _dot);
+			strcat(cmd, "-Tsvg -Kdot -o \"");
+			strcat(cmd, _outFile);
+			strcat(cmd, ".svg\" \"");
+			strcat(cmd, _outFile);
+			strcat(cmd, "\"");
+			
+			cmd[cmdLen] = '\0';
+			
+			common::File bat("create_graph.bat", common::File::WRITE);
+			bat.write(cmd, cmdLen);
+			
+			trace(cmd);
+			
+			trace(system("create_graph.bat"));
+			 **/
 		}
 
 		void addNode(Node* n)
@@ -259,11 +340,14 @@ namespace parser
 		static Self* createFromFile(const char* fileName)
 		{
 			Self* ret = new Self(fileName);
-			ret->setInput(new common::File(fileName, common::File::READ));
+			
+			common::File file(fileName, common::File::READ);
+			ret->_setInput(&file);
+			
 			return ret;
 		};
 
-		static Self* createFromString(const char* buffer)
+		static Self* createFromString(const unsigned char* buffer)
 		{
 			#ifdef __DEBUG__
 			print("Graph creation disabled in TokenReader::createFromString");
@@ -271,23 +355,13 @@ namespace parser
 			return new Self(NULL);
 		};
 
-		void setInput(common::File* file)
-		{
-			AssertExit(file ,!=, NULL);
-
-			ALLOC_ARRAY(buffer, unsigned char, file->size());
-
-			file->read(buffer, file->size());
-		}
-
-		//void setInput(common::unicode::uchar* ch);
-
 		bool next(Token& t)
 		{
 			char ch;
 			char pch;
 			int start = _bufferPos;
 			bool close = false;
+			
 			while( (ch = buffer[_bufferPos]) )
 			{
 				_action = _ActionTable[_token][ch];
@@ -346,13 +420,25 @@ namespace parser
 			if( fileName )
 			{
 				char* _gfile = new char[strlen(fileName)+3];
-				trace(strlen(fileName));
-				mempcpy(_gfile, fileName, strlen(fileName));
+				memcpy(_gfile, fileName, strlen(fileName));
 				strcat(_gfile+strlen(fileName), ".g");
 				_gfile[strlen(fileName)+2] = '\0';
 				_graph = new PActionGraph(_gfile);
 			}
 			#endif
+		}
+		
+		void _setInput(common::File* file)
+		{
+			AssertExit(file ,!=, NULL);
+
+			ALLOC_ARRAY(buffer, unsigned char, file->size());
+
+			file->read(buffer, file->size());
+		}
+		
+		void _setInput(unsigned char* buffer)
+		{
 		}
 	};
 

@@ -17,10 +17,7 @@ namespace common
 	}
 
 	File::File(const char* file, Mode mode, Encoding enc):
-		_fileName(file),
-		_size(0),
-		_position(0),
-		_buffer(NULL)
+		_size(0)
 	{
 		_file = fopen(file, _fileModes[mode]);
 		if( _file == NULL )
@@ -29,11 +26,11 @@ namespace common
 		_size = size();
 		if( _size == -1L )
 		{
-			ex_throwm(IOError, "File: '%s', %s", _fileName, strerror(errno));
+			ex_throwm(IOError, "File: '%s', %s", file, strerror(errno));
 		}
 		else if( _MAX_ALLOWED_FILE_SIZE < _size )
 		{
-			ex_throw(IOError::FileIsTooLarge, _fileName, File::formatSize(_size));
+			ex_throw(IOError::FileIsTooLarge, file, File::formatSize(_size));
 		}
 
 		if( enc == AUTO_DETECT )
@@ -44,7 +41,7 @@ namespace common
 
 	File::~File()
 	{
-		FREE_ARRAY(_buffer);
+		
 	}
 
 	unicode::Reader* File::reader()
@@ -81,7 +78,7 @@ namespace common
 
 	long int File::write(const void* buffer, size_t bytesToWrite)
 	{
-		fwrite(buffer, 1, bytesToWrite, _file);
+		return fwrite(buffer, 1, bytesToWrite, _file);
 	}
 
 	long int File::write(unicode::Writer* writer, bool writeBOM)

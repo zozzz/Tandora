@@ -17,8 +17,8 @@ import pprint
 def dump(x):
     pprint.pprint(x)
 
-#TandoraSRCDir = "c:\\Users\\Zozzz\\Documents\\Tandora\\src\\"
-TandoraSRCDir = "d:\\Works\\cpp\\Tandora\\src\\"
+TandoraSRCDir = "c:\\Users\\Zozzz\\Documents\\Tandora\\src\\"
+#TandoraSRCDir = "d:\\Works\\cpp\\Tandora\\src\\"
 
 def _out(x):
     return x, 1

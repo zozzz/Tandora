@@ -3,8 +3,8 @@
 #include "parser/JSONParser.h"
 
 
-#define _ROOT "D:\\Works\\cpp\\Tandora\\"
-//#define _ROOT "C:\\Users\\Zozzz\\Documents\\Tandora\\"
+//#define _ROOT "D:\\Works\\cpp\\Tandora\\"
+#define _ROOT "C:\\Users\\Zozzz\\Documents\\Tandora\\"
 
 using namespace std;
 using namespace common;
@@ -68,6 +68,6 @@ int main(int argc, char **argv)
 	JSONParser::Token t;
 	while( json->next(t) );
 
-	_WAIT_FOR_KEYP exit(0);
+	//_WAIT_FOR_KEYP exit(0);
 	return 0;
 }

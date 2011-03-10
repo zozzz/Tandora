@@ -86,11 +86,6 @@ namespace common
 		static const char* _fileModes[];
 
 		/**
-		 * Read all content from file when open
-		 */
-		bool _rac;
-
-		/**
 		 * Truw when file is successfully opened
 		 */
 		bool _exists;
@@ -101,11 +96,6 @@ namespace common
 		FILE* _file;
 
 		/**
-		 * File full path
-		 */
-		const char* _fileName;
-
-		/**
 		 * Size in bytes
 		 */
 		long int _size;
@@ -114,16 +104,6 @@ namespace common
 		 * Length in chars
 		 */
 		long int _length;
-
-		/**
-		 * Current position in buffer
-		 */
-		long int _position;
-
-		/**
-		 * Internal buffer for unicode chars
-		 */
-		unicode::uchar* _buffer;
 
 		/**
 		 * Encoding
