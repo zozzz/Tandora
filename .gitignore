@@ -9,3 +9,4 @@ nbproject
 /Makefile
 /.dep.inc
 /*.stackdump
+/test/
