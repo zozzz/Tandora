@@ -1,3 +1,5 @@
+from Token import Token
+
 # ==========================================================================
 # Action
 # ==========================================================================
@@ -8,7 +10,8 @@ class Action:
         "CONTINUE",
         "CLOSE",
         "CHAR_AT",
-        "CHNG_TYPE"
+        "CHNG_TYPE",
+        "INC_LINE"
     ]
 
     @classmethod
@@ -118,21 +121,29 @@ class ActionNotCharAt(ActionCharAt):
 #
 # ==========================================================================
 class ActionClose(Action):
-    def __init__(self, endOfsset=0, token=None):
+    def __init__(self, offset=0, token=None):
         Action.__init__(self, Action.id("CLOSE"), token)
 
-        self.endOfsset = endOfsset
-        if abs(endOfsset) > 15:
+        self.offset = offset
+
+        if abs(offset) > 15:
             raise Exception("Max allowed offset size is 15!")
 
     def _getNumber(self):
         ret = self.id
-        ret |= self.endOfsset << 4
-        ret |= self.tid <<8
+
+        if self.token.flag & Token.SKIP:
+            ret |= 0x10
+
+        if self.token.flag & Token.INC_LINE:
+            ret |= 0x20
+
+        ret |= self.offset << 8
+        ret |= self.tid << 12
         return ret
 
     def __str__(self):
-        return "<close "+str(self.endOfsset)+", "+str(self.tid)+">"
+        return "<close "+str(self.offset)+", "+str(self.tid)+">"
 
 
 
@@ -156,12 +167,12 @@ class ActionChangeTokenType(Action):
 # ==========================================================================
 #
 # ==========================================================================
-class ActionIncrementLN(Action):
+class ActionIncLine(Action):
     def __init__(self):
-        Action.__init__(self, 0)
+        Action.__init__(self, Action.id("INC_LINE"))
 
     def __str__(self):
-        return "<incLN>"
+        return "<incLine>"
 
 
 

@@ -9,27 +9,11 @@
 #define	TANDORAPARSER_H
 
 #include "../global.h"
-#include "Token.h"
-#include "TandoraTokens.h"
+#include "TokenReader.h"
 
-_TANDORA_NS_BEGIN
-
-class TandoraParser: public TokenIterator<Token>
+namespace parser
 {
-
-public:
-	TandoraParser();
-	TandoraParser(const TandoraParser& orig);
-	virtual ~TandoraParser();
-
-protected:
-	virtual TokenPtr _nextToken();
-
-private:
-
-};
-
-
-_TANDORA_NS_END
+	//typedef TokenReader<parser::tandora::TT_COUNT, parser::tandora::actionTable> TandoraParser;
+}
 
 #endif	/* TANDORAPARSER_H */

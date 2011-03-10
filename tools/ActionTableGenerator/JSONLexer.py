@@ -95,10 +95,10 @@ LITERALS = {
     "TRUE"   : "true",
     "FALSE"  : "false",
     "NULL"   : "null",
-    "STRING" : Token("(?P<begin>'|\")(?P<middle>.*?)(?P<end>(?P=begin))", Token.NEED_AS_STRING),
-    "INT"    : Token("(?P<begin>(\-|\+)?[1-9])(?P<middle>[0-9]*)", Token.NEED_AS_STRING),
-    "FLOAT"  : Token("(?P<begin>[0-9]|\.)(?P<middle>([0-9.]+(e(\+|\-)?[0-9]+)?))", Token.IGNORE_CASE | Token.NEED_AS_STRING),
-    "HEX"    : Token("(?P<begin>0x)(?P<middle>[0-9abcdef]*)", Token.IGNORE_CASE | Token.NEED_AS_STRING)
+    "STRING" : Token("(?P<begin>'|\")(?P<middle>.*?)(?P<end>(?P=begin))", Token.NEED_CONTENT),
+    "INT"    : Token("(?P<begin>(\-|\+)?[1-9])(?P<middle>[0-9]*)", Token.NEED_CONTENT),
+    "FLOAT"  : Token("(?P<begin>[0-9]|\.)(?P<middle>([0-9.]+(e(\+|\-)?[0-9]+)?))", Token.IGNORE_CASE | Token.NEED_CONTENT),
+    "HEX"    : Token("(?P<begin>0x)(?P<middle>[0-9abcdef]*)", Token.IGNORE_CASE | Token.NEED_CONTENT)
 }
 
 WHITESPACES = {

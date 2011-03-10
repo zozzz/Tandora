@@ -11,6 +11,7 @@
 #include "../global.h"
 #include "../common/unicode/unicode.h"
 #include "../common/File.h"
+#include "ITokenReader.h"
 
 #ifdef __DEBUG__
 #include <iostream>
@@ -51,10 +52,10 @@ namespace parser
 		//		- token type
 		//		- offset: how many chars track back or forward
 		// 0000 0000 0000 0000 0000 0000 0000 0010
-		//					   \_______/ \__/ \__/
-		//						 |		  |     |
-		//				 Token type	 Offset	 Action Type
-		//
+		//			      \_______/ \__/   || \__/
+		//			   		 |		  |	   ||   |
+		//              Token type  Offset /\ Action Type
+		//					 Increment line	 Skip token
 		//------------------------------------------------------------------------------
 		CLOSE,
 
@@ -79,18 +80,21 @@ namespace parser
 		//							    |       |
 		//						Token type	 Action Type
 		//------------------------------------------------------------------------------
-		CHNG_TYPE
+		CHNG_TYPE,
+
+		//------------------------------------------------------------------------------
+		// Increment line number
+		// 0000 0000 0000 0000 0000 0000 0000 0101
+		//									  \__/
+		//									    |
+		//									 Action Type
+		//------------------------------------------------------------------------------
+		INC_LINE
 	};
 
 	#define BM_ACTION 0xF
 
-	struct Token
-	{
-		unsigned char type;
-		unsigned int line;
-		unsigned short int col;
-		unsigned char* buffer;
-	};
+
 
 	#ifdef __DEBUG__
 	class PActionGraph
@@ -98,48 +102,37 @@ namespace parser
 	public:
 		typedef struct Node
 		{
-			char	ch;
-			int		pos;
-
-			char	begin_ch;
-			int		begin_pos;
-
-			int		action;
+			char ch;
+			int pos;
+			unsigned int uid;
+			unsigned int begin_uid;
+			int action;
 
 			Node():
 				ch(0),
 				pos(0),
-				begin_ch(0),
-				begin_pos(0),
+				begin_uid(0),
 				action(0)
 			{
 			}
 
 			void writeSelfId(std::string& buff)
 			{
-				char* _pos = new char[sizeof(int)*8+1];
-				sprintf(_pos, "%d", pos);
-				char* _ch = new char[sizeof(char)*8+1];
-				sprintf(_ch, "%d", ch);
+				char* _uid = new char[sizeof(int)*8+1];
+				sprintf(_uid, "%d", uid);
 				buff += "n_";
-				buff += _pos;
-				/*buff += "_";
-				buff += _ch;*/
+				buff += _uid;
 			}
 
 			void writeBeginId(std::string& buff)
 			{
-				if( begin_ch != 0 )
+				if( begin_uid != 0 )
 				{
 					char* _begin_pos = new char[sizeof(int)*8+1];
-					sprintf(_begin_pos, "%d", begin_pos);
-					char* _begin_ch = new char[sizeof(char)*8+1];
-					sprintf(_begin_ch, "%d", begin_ch);
+					sprintf(_begin_pos, "%d", begin_uid);
 
 					buff += "n_";
 					buff += _begin_pos;
-					/*buff += "_";
-					buff += _begin_ch;*/
 				}
 			}
 
@@ -147,57 +140,77 @@ namespace parser
 			{
 				switch( action & BM_ACTION )
 				{
-					case ERROR: 
-						buff += "fillcolor=\"#e62929\""; 						
+					case ERROR:
+						buff += "fillcolor=\"#e62929\"";
 					break;
-					
-					case CONTINUE: 
-						buff += "fillcolor=\"#c1e20d\",fontcolor=\"#333333\""; 
+
+					case CONTINUE:
+						buff += "fillcolor=\"#c1e20d\",fontcolor=\"#333333\"";
 					break;
-					
-					case CLOSE: 
-						buff += "fillcolor=\"#325866\""; 
+
+					case CLOSE:
+						buff += "fillcolor=\"#325866\"";
 					break;
-					
-					case CHAR_AT: 
-						buff += "fillcolor=\"#47ba1a\""; 
+
+					case CHAR_AT:
+						buff += "fillcolor=\"#47ba1a\"";
 					break;
-					
-					case CHNG_TYPE: 
-						buff += "fillcolor=\"#dc7904\""; 
+
+					case CHNG_TYPE:
+						buff += "fillcolor=\"#dc7904\"";
 					break;
 				}
 			}
-			
+
 			void writeActionLabel(std::string& buff)
 			{
+				char* _type;
+				char* _type2;
+				char* _offset;
+
 				switch( action & BM_ACTION )
 				{
-					case ERROR: 
-						buff += "ERROR"; 						
+					case ERROR:
+						buff += "ERROR";
 					break;
-					
-					case CONTINUE: 
-						buff += "OK"; 
+
+					case CONTINUE:
+						buff += "OK";
 					break;
-					
-					case CLOSE: 
-						buff += "10"; 
+
+					case CLOSE:
+						_type = new char[sizeof(int)*8+1];
+						sprintf(_type, "%d", (action >> 12) & 0xFF);
+
+						_offset = new char[sizeof(int)*8+1];
+						sprintf(_offset, "%d", (action >> 8) & BM_ACTION);
+
+						if( action & 0x10 )
+							buff += "S|";
+
+						if( action & 0x20 )
+							buff += "I|";
+
+						buff += _offset;
+						buff += "|";
+						buff += _type;
 					break;
-					
-					case CHAR_AT: 
-						buff += "1|3|5"; 
+
+					case CHAR_AT:
+						buff += "1|3|5";
 					break;
-					
-					case CHNG_TYPE: 
-						buff += "23"; 
+
+					case CHNG_TYPE:
+						_type = new char[sizeof(int)*8+1];
+						sprintf(_type, "%d", (action >> 4));
+						buff += _type;
 					break;
 				}
 			}
-			
+
 			void write(std::string& buff)
 			{
-				if( begin_ch != 0 )
+				if( begin_uid != 0 )
 				{
 					writeBeginId(buff);
 					buff += " -> ";
@@ -232,19 +245,10 @@ namespace parser
 					buff += ch;
 				buff += "|";
 
-				/*switch( action & BM_ACTION )
-				{
-					case ERROR: buff += "ERROR"; break;
-					case CONTINUE: buff += "CONTINUE"; break;
-					case CLOSE: buff += "CLOSE"; break;
-					case CHAR_AT: buff += "CHAR_AT"; break;
-					case CHNG_TYPE: buff += "CHNG_TYPE"; break;
-					default: buff += "undefined"; break;
-				}*/
 				writeActionLabel(buff);
-				
+
 				buff += "}\",";
-				
+
 				writeActionStyle(buff);
 
 				buff += "];\n";
@@ -266,14 +270,14 @@ namespace parser
 
 		void writeToFile()
 		{
-			_buffer += "rankdir=LR; ranksep=0.5; dpi=72; nodesep=0.1;\n";
+			_buffer += "rankdir=LR; ranksep=0.5; dpi=80; nodesep=0.1;\n";
 			_buffer += "node[shape=record, fontsize=10, height=0.25, width=1.8, fontname=\"monospace\", style=filled, fontcolor=\"#FFFFFF\", fixedsize=true];\n";
 
 			_fillData();
 			_buffer += "}";
 			common::File f(_outFile, common::File::WRITE);
 			f.write(_buffer.c_str(), _buffer.size());
-			
+
 			/*
 			const char* _dot = "\"C:\\Program Files (x86)\\Graphviz2.26.3\\bin\\dot.exe\" -v";
 			int cmdLen = strlen(_outFile) * 2 + 24 + strlen(_dot);
@@ -284,14 +288,14 @@ namespace parser
 			strcat(cmd, ".svg\" \"");
 			strcat(cmd, _outFile);
 			strcat(cmd, "\"");
-			
+
 			cmd[cmdLen] = '\0';
-			
+
 			common::File bat("create_graph.bat", common::File::WRITE);
 			bat.write(cmd, cmdLen);
-			
+
 			trace(cmd);
-			
+
 			trace(system("create_graph.bat"));
 			 **/
 		}
@@ -301,15 +305,13 @@ namespace parser
 			_nodes.push_back(n);
 		}
 
-		void addNode(char ch, int pos, char begin_ch, int begin_pos, int action)
+		void addNode(unsigned int uid, char ch, int pos, unsigned int begin_uid, int action)
 		{
 			Node* n = new Node();
 			n->ch = ch;
 			n->pos = pos;
-
-			n->begin_ch = begin_ch;
-			n->begin_pos = begin_pos;
-
+			n->uid = uid;
+			n->begin_uid = begin_uid;
 			n->action = action;
 
 			addNode(n);
@@ -323,6 +325,7 @@ namespace parser
 		void _fillData()
 		{
 			for( std::list<Node*>::reverse_iterator iter = _nodes.rbegin() ; iter != _nodes.rend() ; ++iter )
+			//for( std::list<Node*>::iterator iter = _nodes.begin() ; iter != _nodes.end() ; ++iter )
 			{
 				(*iter)->write(_buffer);
 			}
@@ -330,20 +333,19 @@ namespace parser
 	};
 	#endif
 
-	template<int _TokenCount, unsigned int _ActionTable[_TokenCount][128], class _Token>
-	class TokenReader
+	template<int _TokenCount, unsigned int _ActionTable[_TokenCount][128]>
+	class TokenReader: public ITokenReader
 	{
 	public:
-		typedef _Token Token;
-		typedef TokenReader<_TokenCount, _ActionTable, _Token> Self;
+		typedef TokenReader<_TokenCount, _ActionTable> Self;
 
 		static Self* createFromFile(const char* fileName)
 		{
 			Self* ret = new Self(fileName);
-			
+
 			common::File file(fileName, common::File::READ);
 			ret->_setInput(&file);
-			
+
 			return ret;
 		};
 
@@ -355,62 +357,123 @@ namespace parser
 			return new Self(NULL);
 		};
 
-		bool next(Token& t)
+		virtual bool next(Token& t)
 		{
 			char ch;
-			char pch;
 			int start = _bufferPos;
-			bool close = false;
-			
+			unsigned int action;
+
 			while( (ch = buffer[_bufferPos]) )
 			{
 				_action = _ActionTable[_token][ch];
 				#ifdef __DEBUG__
 				if( _graph != NULL )
-					if( _bufferPos == start )
-						_graph->addNode(ch, _bufferPos, 0, 0, _action);
-					else
-						_graph->addNode(ch, _bufferPos, pch, _bufferPos-1, _action);
+				{
+					_graph->addNode(_guid, ch, _bufferPos, (_guid > 0 && start != _bufferPos ? _guid-1 : 0), _action);
+					++_guid;
+				}
 				#endif
 
-				switch( _action & BM_ACTION )
+				action = _action & BM_ACTION;
+
+				if( action == CLOSE )
 				{
-					case CLOSE:
+					unsigned char offset = (_action >> 8) & BM_ACTION;
+
+					if( _action & 0x20 )
+					{
+						++_line;
+						_col = 0;
+					}
+
+					if( _action & 0x10 )
+					{
 						_token = 0;
-						close = true;
-					break;
+						++_bufferPos;
+						continue;
+					}
+					else
+					{
+						_bufferPos -= offset - 1;
+						_col -= offset - 1;
+						_token = (_action >> 12);
+						goto AfterWhile;
+					}
+				}
+				else if( action == CHNG_TYPE )
+				{
+					_token = (_action >> 4);
+				}
+				else if( action == ERROR )
+				{
+					#ifndef __DEBUG__
+					ex_throw(ParserError::UnexpectedChar, line, col);
+					#endif
+				}
+				else if( action == CHAR_AT )
+				{
+					unsigned char cpos;
+					unsigned char pos = _bufferPos-start;
+					for( unsigned char i=4 ; i<24 ; i += 4 )
+					{
+						cpos = (_action >> i);
+						if( cpos == 0 )
+							break;
+
+						if( cpos != pos )
+						{
+							_token = (_action >> 24);
+							break;
+						}
+					}
+				}
+				else if( action == INC_LINE )
+				{
+					++_line;
+					_col = 0;
 				}
 
 				++_bufferPos;
-				pch = ch;
 
-				if( close )
-					return true;
 			}
+
+			AfterWhile:
 
 			#ifdef __DEBUG__
 			if( ch == 0 && _graph != NULL )
 				_graph->writeToFile();
 			#endif
 
-			return false;
+			t.type = _token;
+			_token = 0;
+
+			trace(_bufferLength);
+			trace(_bufferPos);
+			return _bufferLength-1 > _bufferPos;
 		}
 
 
 	protected:
 		unsigned char* buffer;
+		int _bufferLength;
 		int _bufferPos;
 		int _token;
 		int _action;
+		int _line;
+		int _col;
 
 		#ifdef __DEBUG__
 		PActionGraph* _graph;
+		unsigned int _guid;
 		#endif
 
 		#ifdef __DEBUG__
 		TokenReader(const char* fileName):
 			_bufferPos(0),
-			_token(0)
+			_token(0),
+			_guid(0),
+			_line(0),
+			_col(0)
 		#else
 		TokenReader():
 			_token(0)
@@ -427,16 +490,17 @@ namespace parser
 			}
 			#endif
 		}
-		
+
 		void _setInput(common::File* file)
 		{
 			AssertExit(file ,!=, NULL);
 
-			ALLOC_ARRAY(buffer, unsigned char, file->size());
-
-			file->read(buffer, file->size());
+			_bufferLength = file->size();
+			ALLOC_ARRAY(buffer, unsigned char, _bufferLength + 1);
+			file->read(buffer, _bufferLength);
+			buffer[_bufferLength] = '\0';
 		}
-		
+
 		void _setInput(unsigned char* buffer)
 		{
 		}

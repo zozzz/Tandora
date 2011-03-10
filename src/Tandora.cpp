@@ -3,8 +3,8 @@
 #include "parser/JSONParser.h"
 
 
-//#define _ROOT "D:\\Works\\cpp\\Tandora\\"
-#define _ROOT "C:\\Users\\Zozzz\\Documents\\Tandora\\"
+#define _ROOT "D:\\Works\\cpp\\Tandora\\"
+//#define _ROOT "C:\\Users\\Zozzz\\Documents\\Tandora\\"
 
 using namespace std;
 using namespace common;
@@ -63,7 +63,7 @@ int main(int argc, char **argv)
 
 	//xyz(parser::json::actionTable, parser::json::TT_COUNT);
 
-	JSONParser* json = JSONParser::createFromFile(_ROOT "test\\json.test");
+	JSONParser* json = JSONParser::createFromFile(_ROOT "test\\json_small.test");
 
 	JSONParser::Token t;
 	while( json->next(t) );

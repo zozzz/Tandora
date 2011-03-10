@@ -125,13 +125,6 @@ namespace common
 	_EX_DECL_END
 
 	_EX_DECL_MSG(MemoryError, NotEnough, "Not enough memory, try to allocate: %d byte!")
-
-
-	//------------------------------------------------------------------------------
-	// StopIteration
-	//------------------------------------------------------------------------------
-
-	_EX_DECL_MSG(Exception, StopIteration, "Iterator reach end of stream!")
 }
 
 #endif	/* EXCEPTION_H */

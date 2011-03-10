@@ -77,31 +77,31 @@ class ActionTable:
             return
 
 
-        try:
-            print "Generate " + self.outFile + ".cpp ...",
+        #try:
+        print "Generate " + self.outFile + ".cpp ...",
 
-            f = open(self.outFile+".cpp", "w")
-            f.write("// AUTO GENERATED CODE, DO NOT EDIT!!!" + self.EOL * 2);
+        f = open(self.outFile+".cpp", "w")
+        f.write("// AUTO GENERATED CODE, DO NOT EDIT!!!" + self.EOL * 2);
 
-            f.write('#include "'+os.path.basename(self.outFile)+'.h"' + self.EOL * 2);
+        f.write('#include "'+os.path.basename(self.outFile)+'.h"' + self.EOL * 2);
 
-            ns = self.namespace.split(".")
+        ns = self.namespace.split(".")
 
-            for x in ns:
-                f.write("namespace " + x + " { ")
-            f.write(self.EOL + self.EOL)
+        for x in ns:
+            f.write("namespace " + x + " { ")
+        f.write(self.EOL + self.EOL)
 
-            f.write(self._createActionTable(1) + self.EOL * 2)
+        f.write(self._createActionTable(1) + self.EOL * 2)
 
-            for x in ns:
-                f.write("} /* "+ x +" */" + self.EOL)
+        for x in ns:
+            f.write("} /* "+ x +" */" + self.EOL)
 
-            f.close()
+        f.close()
 
-            print "[OK]"
-        except:
-            print "[ERROR]", sys.exc_info()[1]
-            return
+        print "[OK]"
+        #except:
+        #    print "[ERROR]", sys.exc_info()[1]
+        #    return
 
 
 
@@ -179,7 +179,9 @@ class ActionTable:
 
         return self.EOL.join(ret)
 
-
+    # TODO: remake
+    # minden tokent egységesen kell kezelni:
+    # a pos == 0 mindenhol ugyan az ellenkező esetben pedig 3 részre kell osztani az ellenőrzést
     def _fillActionTable(self):
 
         for token in self.lexer._ordered:
@@ -192,7 +194,7 @@ class ActionTable:
             if token.infinity:
 
                 pos = 0
-                for pgroup in ["begin", "middle", "end"]:
+                for pgroup in ["begin", "middle"]:
                     if token[pgroup] is None:
                         continue
 
@@ -252,12 +254,19 @@ class ActionTable:
                                 if _max == 1 and token.exact and len(_alts) == 1:
                                     self.actionTable[self.lexer.default.name][char] = ActionClose(0, token)
                                     self._closedTokens.append(token.name)
-                                    break
                                 elif self.actionTable[self.lexer.default.name][char] == 0:
                                     self.actionTable[self.lexer.default.name][char] = ActionChangeTokenType(token)
 
                                 for _alt in _alts:
                                     self._addAvailChar(self.lexer._tokens[_alt], char, pos)
+
+                                #if len(_alts) > 1:
+                                #    for _alt in _alts[1:]:
+                                #        _atoken = self.lexer._tokens[_alt]
+                                #        for achar in range(Lexer.ASCII_MIN, Lexer.ASCII_MAX):
+                                #            if self.actionTable[token.name][achar] == 0:
+                                #                self.actionTable[token.name][char] = ActionChangeTokenType(self.lexer._tokens[_alt])
+
 
                             continue
 
@@ -279,6 +288,14 @@ class ActionTable:
                                     else:
                                         self.actionTable[token.name][char] = ActionCharAt(token, pos)
 
+                                    if pos == 1:
+                                        for _achar in self._tokenChars[token.name][0:1]:
+                                            for achar in _achar:
+                                                if self.actionTable[self.lexer.default.name][achar] \
+                                                    and self.actionTable[self.lexer.default.name][achar].token \
+                                                    and self.actionTable[self.actionTable[self.lexer.default.name][achar].token.name][char] == 0:
+                                                    self.actionTable[self.actionTable[self.lexer.default.name][achar].token.name][char] = ActionChangeTokenType(token)
+
                                     _addChars.append((token, pos, char))
 
                                 else:
@@ -295,6 +312,8 @@ class ActionTable:
 
 
 
+
+
                     #print "_postAddChars:", pos, _addChars
                     for (_cha_token, _cha_pos, _cha_ch) in _addChars:
                         self._addAvailChar(_cha_token, _cha_ch, _cha_pos)
@@ -302,19 +321,29 @@ class ActionTable:
                     if token.exact and pos == token.maxWidth():
                         self._closedTokens.append(token.name)
 
-            """ EZ KELL CSAK RONTJA AZ ÁTLÁTHATÓSÁGOT
+            # ha van end pattern...
+            #if token.end is not None:
+
+
+            """ EZ KELL CSAK RONTJA AZ ÁTLÁTHATÓSÁGOT """
             for (char, action) in enumerate(self.actionTable[token.name]):
                 if action != 0:
                     continue
 
                 _alts = self._findAvailTokens(char, skipClosed=False)
                 if len(_alts):
-                    for _alt in _alts:
-                        self.actionTable[token.name][char] = ActionClose(-1, self.lexer._tokens[_alt])
-            """
+                    self.actionTable[token.name][char] = ActionClose(1, token)
+                    # jelenleg nem kell, de lehet, hogy a skipp-el kombinálva majd jó lesz csak az offset lesz 0 olyankor
+                    #for _alt in _alts:
+                    #    if isinstance(self.actionTable[self.lexer.default.name][char], ActionClose) \
+                    #        and self.actionTable[self.lexer.default.name][char].offset == 0:
+                    #        self.actionTable[token.name][char] = ActionClose(1, token, self.lexer._tokens[_alt])
+                    #    else:
 
 
-        #return
+
+
+        return
         for (key, value) in self.actionTable.iteritems():
             print key,
             for action in value:

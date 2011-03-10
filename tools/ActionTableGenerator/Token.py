@@ -10,8 +10,8 @@ class Token:
     IGNORE_CASE     = 1 << 0
     SKIP            = 1 << 1
     INC_LINE        = 1 << 2
-    NEED_AS_STRING  = 1 << 3
-
+    NEED_CONTENT    = 1 << 3
+    
     RESULT_NORMAL = 0
     RESULT_EXTEND = 1
 

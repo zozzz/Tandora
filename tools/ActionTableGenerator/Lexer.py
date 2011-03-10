@@ -21,6 +21,7 @@ class Lexer:
         self._module = module
         self._tokens = {}
         self._tokensByGroup = [] # touple list (group, token)
+        #self._closeTokens = []
 
         # ordered list from tokens
         # lowest width first
