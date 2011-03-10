@@ -47,7 +47,7 @@ namespace common
 
 		bool writec(unsigned int ch);
 
-		long int write(const void* buffer, size_t charsToWrite);
+		long int write(const void* buffer, size_t bytesToWrite);
 
 		inline long int tell() const
 		{

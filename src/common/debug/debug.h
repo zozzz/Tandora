@@ -117,9 +117,10 @@ void __dbg_trace__(int line, const char* fn, ...)
 #define trace(var) std::cout << #var << " = " << (var) << std::endl
 // TODO: improve
 #define traceb(var) std::cout << #var << " = " << std::bitset<32>(var) << std::endl
+#define print(x) std::cout << (x) << std::endl
 
 }}
-	
+
 #else
 #define Assert(var1, op, var2)
 #define AssertExit(var1, op, var2)

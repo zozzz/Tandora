@@ -51,11 +51,22 @@ int main(int argc, char **argv)
 	/*JSONParser* json = JSONParser::create(new File(_ROOT "test\\json.test"));
 
 	json->next();*/
-	
-	JSONParser* json = JSONParser.createFromFile("Test file");
+
+	//JSONParser* json = JSONParser::createFromFile("Test file");
+	//json->next();
+
+	/*std::string s;
+	s += "Hello" + " a";
+
+	std::cout << s << endl;*/
+
 
 	//xyz(parser::json::actionTable, parser::json::TT_COUNT);
 
+	JSONParser* json = JSONParser::createFromFile(_ROOT "test\\json.test");
+
+	JSONParser::Token t;
+	while( json->next(t) );
 
 	_WAIT_FOR_KEYP exit(0);
 	return 0;

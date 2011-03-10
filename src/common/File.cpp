@@ -79,6 +79,11 @@ namespace common
 		return NULL;
 	}
 
+	long int File::write(const void* buffer, size_t bytesToWrite)
+	{
+		fwrite(buffer, 1, bytesToWrite, _file);
+	}
+
 	long int File::write(unicode::Writer* writer, bool writeBOM)
 	{
 		writer->reset();
