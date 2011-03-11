@@ -11,7 +11,7 @@ class Token:
     SKIP            = 1 << 1
     INC_LINE        = 1 << 2
     NEED_CONTENT    = 1 << 3
-    
+
     RESULT_NORMAL = 0
     RESULT_EXTEND = 1
 
@@ -22,11 +22,12 @@ class Token:
     #           - middle: OPCIONÁLIS, ez vizsgál mindent, ami nem a start részben van és a végén, ha meg van adva
     #           - end: OPCIONÁLIS, ez viszgálja a végét (middle megadása kötelező)
     #        lookupok, csak +/- 1 karakatert képesek
-    def __init__(self, pattern, flag = 0):
+    def __init__(self, pattern, flag = 0, escape = None):
         self.name = None
         self.group = None
         self.flag = flag
         self.lexer = None
+        self.escape = escape
 
         scf = 0
         if flag & self.IGNORE_CASE:
@@ -75,6 +76,7 @@ class Token:
 
         if self.middle and self.middle.maxWidth() >= self.INF_WIDTH:
             self.infinity = True
+            self.middle.infinity = True
         else:
             self.infinity = False
 
@@ -251,15 +253,20 @@ class Token:
     #        - RESULT_NORMAL: True / False
     #        - RESULT_EXTEND: (True / False, matchedLength)
     def test(self, chars, group=None, resultType=0):
-        p = self.parsed
-
         if group is not None:
-            if group == "begin":
+            if group == "begin" and self.begin:
                 p = self.begin._pattern
-            elif group == "middle":
+            elif group == "middle" and self.middle:
                 p = self.middle._pattern
-            elif group == "end":
+            elif group == "end" and self.end:
                 p = self.end._pattern
+            else:
+                if resultType == self.RESULT_NORMAL:
+                    return False
+                else:
+                    return (False, 0)
+        else:
+            p = self.parsed
 
         if resultType == self.RESULT_NORMAL:
             return self._test(p, chars, 0, 0)[0]
@@ -444,6 +451,7 @@ class MatchPattern:
         self._pattern = parsed
         self._ignoreCase = ignoreCase
         self._token = token
+        self.infinity = False
         #self._chars = self._convertToCharList()
 
     def minWidth(self):

@@ -179,15 +179,217 @@ class ActionTable:
 
         return self.EOL.join(ret)
 
-    # TODO: remake
-    # minden tokent egységesen kell kezelni:
-    # a pos == 0 mindenhol ugyan az ellenkező esetben pedig 3 részre kell osztani az ellenőrzést
-    def _fillActionTable(self):
-
+    def _initActionTable(self):
         for token in self.lexer._ordered:
             self.actionTable[token.name] = []
             for _x in range(Lexer.ASCII_MIN, Lexer.ASCII_MAX):
                 self.actionTable[token.name].append(0)
+
+    # TODO: remake
+    # minden tokent egységesen kell kezelni:
+    # a pos == 0 mindenhol ugyan az ellenkező esetben pedig 3 részre kell osztani az ellenőrzést
+
+    def _fillActionTable(self):
+
+        self._initActionTable();
+        tokens = self.lexer._ordered[1:];
+
+        for token in tokens:
+            # (token:Token, pos:int, ch:int)
+            _addChars = []
+
+            if self._insertTokenActions(token):
+                self._closedTokens.append(token.name);
+
+            if token.escape:
+                for esc_ch in token.escape:
+                    self.actionTable[token.name][ord(esc_ch)] = ActionSeekForward(2)
+
+            for (_ach_token_, _ach_pos_, _ach_ch_) in _addChars:
+                self._addAvailChar(_ach_token_, _ach_pos_, _ach_ch_)
+
+            if token.end is None:
+                for (char, action) in enumerate(self.actionTable[token.name]):
+                    if action != 0:
+                        continue
+
+                    _alts = self._findAvailTokens(char, skipClosed=False)
+                    if len(_alts):
+                        self.actionTable[token.name][char] = ActionClose(1, token)
+
+        for (key, value) in self.actionTable.iteritems():
+            print key,
+            for action in value:
+                print action,
+            print ""
+
+        """
+        each token:
+
+            for pgroup in ["begin", "middle"]:
+
+                if token[pgrpoup] is None:
+                    continue
+
+                if token[pgrpoup].infinity:
+                    plen = token[pgrpoup].minWidth()
+
+                plen = (token.infinity ? token.minWidth() : token.maxWidth())
+
+                for pos in plen:
+
+                    for char in 0...128:
+
+                        if pos == 0:
+                            megállapítani a begin alapján, hogy mivel kezdődhet és azt betolni  default-ba
+
+                        else:
+
+                            if token[pgroup].infinity:
+                                pass
+                            else:
+                                ebben az esetben az adott group karakter egyezéseit vizsgálja és a sorrend fontos
+                                azaz valószínűleg CharAt action lesz mind
+
+            # (?P<begin>/\\*)(?P<middle>.*?)(?P<end>\\*/)
+            # (?P<begin>//)(?P<middle>.*?)(?P<end>\r|\n)
+            if token.end is not None:
+                endlen = token.end.maxWidth()
+
+                for epos in endlen:
+                    for char in 0...128:
+
+            // insertIncLineAction(token)
+
+        """
+
+        pass
+
+    # @param Token
+    # @param (token:Token, pos:int, ch:int)
+    # @return True/False ha True akkor véglegesen lezárja a tokent
+    def _insertTokenActions(self, token):
+        groups = []
+        if token.begin:
+            groups.append("begin")
+        if token.middle:
+            groups.append("middle")
+        if token.end:
+            groups.append("end")
+
+        defToken = self.lexer.default
+        _ascii_chars_ = range(self.lexer.ASCII_MIN, self.lexer.ASCII_MAX)
+        AT = self.actionTable;
+        _endChars = []
+
+        pos = 0
+
+        for groupName in groups:
+            group = token[groupName]
+            glen = 0
+
+            if group.infinity:
+                glen = max(1, group.minWidth())
+            else:
+                glen = group.maxWidth()
+
+            for gpos in range(0, glen):
+
+                availChars = []
+                endAvailChars = []
+
+                for char in _ascii_chars_:
+
+                    # ==========================================================================
+                    # POSITION == 0
+                    # ==========================================================================
+                    if pos == 0:
+                        altTokens = self._findAvailTokens(char)
+
+                        if len(altTokens) > 0 and altTokens[0] == token.name:
+                            if token.exact and token.maxWidth() == 1 and len(altTokens) == 1:
+                                AT[defToken.name][char] = ActionClose(0, token)
+                            else:
+                                if AT[defToken.name][char] == 0:
+                                    AT[defToken.name][char] = ActionChangeType(token)
+
+                                for _alt in altTokens[1:]:
+                                    AT[token.name][char] = ActionChangeType(self.lexer._tokens[_alt])
+
+                            for _alt in altTokens:
+                                availChars.append((self.lexer._tokens[_alt], pos, char))
+
+                    # ==========================================================================
+                    # END GROUP
+                    # ==========================================================================
+                    elif groupName == "end":
+                        _chs = _endChars[:]
+                        while len(_chs) <= gpos:
+                            _chs.append([])
+
+                        _chs[gpos].append(char)
+                        
+                        (tr_match, tr_length) = token.test(_chs, "end", Token.RESULT_EXTEND)
+                        if tr_match and tr_length-1 == gpos:
+                            print "end: ", chr(char), gpos, tr_match, tr_length, token.name
+
+                            endAvailChars.append((token, gpos, char))
+
+                    # ==========================================================================
+                    # ANY OTHER...
+                    # ==========================================================================
+                    else:
+                        altTokens = self._findAvailTokens(char, token=token, length=pos)
+                        #print token.name, "["+chr(char)+":"+str(pos)+"]", "->", altTokens, self._tokenChars[token.name]
+
+                        if len(altTokens) > 0:
+
+                            if altTokens[0] == token.name:
+                                if group.infinity is False:
+                                    if AT[token.name][char] == 0:
+                                        AT[token.name][char] = ActionCharAt(token, pos)
+                                    elif isinstance(AT[token.name][char], ActionCharAt) \
+                                        and AT[token.name][char].tid == token.id():
+                                        AT[token.name][char].addPosition(pos)
+                                else:
+                                    if AT[token.name][char] == 0:
+                                        AT[token.name][char] = ActionContinue()
+                            else:
+                                for _alt in altTokens:
+                                    if AT[token.name][char] == 0:
+                                        AT[token.name][char] = ActionChangeType(self.lexer._tokens[_alt])
+
+                            for _alt in altTokens:
+                                availChars.append((self.lexer._tokens[_alt], pos, char))
+
+
+                for (_ach_token_, _ach_pos_, _ach_ch_) in availChars:
+                    self._addAvailChar(_ach_token_, _ach_ch_, _ach_pos_)
+
+                for (_ach_token_, _ach_pos_, _ach_ch_) in endAvailChars:
+                    while len(_endChars) <= _ach_pos_:
+                        _endChars.append([])
+
+                    if _endChars[_ach_pos_].count(_ach_ch_) == 0:
+                        _endChars[_ach_pos_].append(_ach_ch_)
+
+                gpos += 1
+                pos += 1
+
+    def _insertIncLineAction(self):
+
+        """
+        increment lineos token vizsgálata, ha azon a helyen szerepl action
+        akkor ennek megfelelően kel módosítani:
+        CONTINUE -> INC_LINE
+        CLOSE -> CLOSE(incLine)
+        """
+
+        pass
+
+    def _fillActionTable_old(self):
+
+
 
 
         for token in self.lexer._ordered[1:]:
@@ -375,54 +577,6 @@ class ActionTable:
             |-> (case->identifier)
     """
 
-    def _determineActionsFor(self, token):
-
-        """
-        infinity = token.maxWidth() >= 65535
-        subGroup = None
-
-        if infinity and token.begin.maxWidth() < 65535:
-            subGroup = "begin"
-            ml = token.begin.maxWidth()
-        else:
-            ml = token.maxWidth()
-
-
-        variants = []
-        for pos in range(0, ml+1):
-            vSnapShot = variants[:]
-            for char in range(Lexer.ASCII_MIN, Lexer.ASCII_MAX):
-                #print vSnapShot
-                alterTokens = []
-                if pos > 0:
-                    self._findAlternativeTokens(token, vSnapShot, char, alterTokens);
-
-                if self._tokenIsMatch(token, vSnapShot, char, subGroup):
-                    if len(variants) <= pos:
-                        variants.append([])
-                    variants[pos].append(char)
-
-
-                if len(alterTokens):
-                    print "alt["+token.name+":"+str(pos)+":"+chr(char)+"]: ", alterTokens
-
-        #print token.name, variants
-        """
-
-        pos = 0
-        while True:
-
-            if pos == 0:
-                for char in range(Lexer.ASCII_MIN, Lexer.ASCII_MAX):
-                    avail = []
-                    self._findAvailTokens(char, avail)
-
-                    print "avail:", chr(char), avail
-
-            break
-
-
-
     def _tokenIsMatch(self, tok, chars, ch, subGroup=None):
         chr = chars[:]
         if ch:
@@ -461,8 +615,6 @@ class ActionTable:
                 continue
 
             (_match, _length) = altToken.test(chars, groups, Token.RESULT_EXTEND)
-            #if _match and token:
-            #    print token.name, altToken.name, _chsLength, _length
             if _match and _length == _chsLength and result.count(altToken.name) == 0:
                 if token is not None and altToken.name == token.name:
                     selfMatched = True
@@ -494,15 +646,8 @@ class ActionTable:
         if self._tokenChars.has_key(tok.name) is False:
             self._tokenChars[tok.name] = []
 
-        #print len(self._tokenChars[tok.name]), "<=", pos
-        """while len(self._tokenChars[tok.name]) <= pos:
-            print len(self._tokenChars[tok.name]), "<=", pos
-            self._tokenChars[tok.name].append([])"""
-        while True:
-            if len(self._tokenChars[tok.name]) <= pos:
-                self._tokenChars[tok.name].append([])
-            else:
-                break
+        while len(self._tokenChars[tok.name]) <= pos:
+            self._tokenChars[tok.name].append([])
 
         if self._tokenChars[tok.name][pos].count(ch) == 0:
             self._tokenChars[tok.name][pos].append(ch)

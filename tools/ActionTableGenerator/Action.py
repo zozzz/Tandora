@@ -11,7 +11,8 @@ class Action:
         "CLOSE",
         "CHAR_AT",
         "CHNG_TYPE",
-        "INC_LINE"
+        "INC_LINE",
+        "SEEK_FWD"
     ]
 
     @classmethod
@@ -57,12 +58,19 @@ class ActionMatchPrevToken(Action):
 # ==========================================================================
 #
 # ==========================================================================
-class ActionNotMatchPrevToken(ActionMatchPrevToken):
-    def __init__(self):
-        ActionMatchPrevToken.__init__(self, 0)
+class ActionSeekForward(Action):
+    def __init__(self, offset=0):
+        Action.__init__(self, Action.id("SEEK_FWD"))
+
+        self.offset = offset
+
+    def _getNumber(self):
+        ret = self.id
+        ret |= self.offset << 4
+        return ret
 
     def __str__(self):
-        return "<notMatchPrevToken>"
+        return "<seekForward, "+str(self.offset)+">"
 
 
 
@@ -121,10 +129,12 @@ class ActionNotCharAt(ActionCharAt):
 #
 # ==========================================================================
 class ActionClose(Action):
-    def __init__(self, offset=0, token=None):
+    def __init__(self, offset=0, token=None, incLine=False, needContent=False):
         Action.__init__(self, Action.id("CLOSE"), token)
 
         self.offset = offset
+        self.incLine = incLine or (self.token.flag & Token.INC_LINE) == Token.INC_LINE
+        self.needContent = needContent or (self.token.flag & Token.NEED_CONTENT) == Token.NEED_CONTENT
 
         if abs(offset) > 15:
             raise Exception("Max allowed offset size is 15!")
@@ -135,8 +145,11 @@ class ActionClose(Action):
         if self.token.flag & Token.SKIP:
             ret |= 0x10
 
-        if self.token.flag & Token.INC_LINE:
+        if self.incLine:
             ret |= 0x20
+
+        if self.needContent:
+            ret |= 0x40
 
         ret |= self.offset << 8
         ret |= self.tid << 12
@@ -150,7 +163,7 @@ class ActionClose(Action):
 # ==========================================================================
 #
 # ==========================================================================
-class ActionChangeTokenType(Action):
+class ActionChangeType(Action):
     def __init__(self, token):
         Action.__init__(self, Action.id("CHNG_TYPE"), token)
 

@@ -73,7 +73,7 @@ A nyelv alapja az ActionScript 3, az ettől eltérő módosítások felsorolása
 
         public class DataModel<T> extends DataModelEvent<T>
         {
-            public typedef QueryResult QueryResult<T>;
+            public typedef QueryResult<T> QueryResult;
 
             public function query(sql:String):QueryResult
             {
@@ -86,7 +86,7 @@ A nyelv alapja az ActionScript 3, az ettől eltérő módosítások felsorolása
 
         }
 
-        typedef PatientQS ModelPatient.QueryResult;
+        typedef ModelPatient.QueryResult PatientQS;
 
         public class ModelMedicine extends DataModel<Medicine>
         {
@@ -95,7 +95,7 @@ A nyelv alapja az ActionScript 3, az ettől eltérő módosítások felsorolása
 
         public class ModelMyType extends DataModel<Medicine>
         {
-            override public typedef QueryResult QueryResultExt<Medicine>;
+            override public typedef QueryResultExt<Medicine> QueryResult;
         }
 
         var qs:ModelPatient.QueryResult = ModelPatient.query('...'); // ebben az esetben a qs változó tipusa QueryResult<Patient>
@@ -195,24 +195,47 @@ A nyelv alapja az ActionScript 3, az ettől eltérő módosítások felsorolása
 	var array:String["test", "test2"]; // string array létrehozása + inicializálás
 	var map:DisplayObject{}; // DisplayObject map létrehozása, nem égényel külön inicializációt
 	var btn:Button(label="Bezárás"); //
-	 
+
 	 ha osztályt példányosítunk lehetőség van egyből bizonyos változók beállítására:
-	 
+
 	 class Test
 	 {
 		[KeywordArg(required)] public var label:String;
 		[KeywordArg] protected var zIndex:Number;
 		[KeywordArg] private var dontKnow:int;
-		
+
 		public function Test(x:Number, y:Number)
 		{
+			// itt már be vannak állítva a tulajdonságok
 		}
 	 }
-	 
+
+	 // örökölte a KeywordArg metadatával rendelkező változókat
+	 class Sub extends Test
+	 {
+		[KeywordArg] dynamic var width:Number
+		{
+			public set: {}
+			private get: {}
+		}
+
+		public Sub(x:Number, y:Number)
+		{
+			// itt már beállította a szülő osztály KeywordArg-os tulajdonságait
+			// és a saját osztály KeywordArg-os tulajdonságait
+			// ha ősosztály konstruktort hívunk, csak a függvényben deklarált argumentum listát kell megadni
+			super(x, y);
+		}
+	 }
+
+	 var x:Sub(10, 10, width=100, zIndex=2);
+	 this.sub = new Sub(10, 10, dontKnow=1);
+
 	 var _test:Test(0, 0); // cak az x, y argumentumok kapnak értéket
 	 var _test:Test(label="Test"); // hiba mert az x, y-t kötelező megadni
 	 var _test:Test(0, 0, label="Test", dontKnow=1); // cool, ebben az esetben is használható a **kwargs
 	 var _test:Test(x=0, y=0, zIndex=1)
+
 
 
 Fordító felépítése:
@@ -496,49 +519,6 @@ TREE
 PARSER
 ============================================================
 
-
-
-
-	enum CharClass
-	{
-		CC_WHITE,	// space, tab, new line, carraige return
-		CC_LCRUB,	// {
-		CC_RCRUB,	// }
-		CC_LRUDB,	// (
-		CC_RRUDB,	// )
-		CC_LSQRB,	// [
-		CC_RSQRB,	// ]
-		CC_LANGB,	// <
-		CC_RANGB,	// >
-
-		CC_EXCLM,	// !
-		CC_DQUOT,	// "
-		CC_SQUOT,	// '
-		CC_HASHM,	// #
-		CC_DOLLAR,	// $
-		CC_PRCNT,	// %
-		CC_AND,		// &
-		CC_STAR,	// *
-		CC_PLUS,	// +
-		CC_COMMA,	// ,
-		CC_MINUS,	// -
-		CC_DOT,		// .
-		CC_SLASH,	// /
-		CC_BSLASH,	// \
-		CC_COLON,	// :
-		CC_SCOLON,	// ;
-		CC_EQUAL,	// =
-		CC_QUEST,	// ?
-		CC_AT,		// @
-
-		CC_NUM00,	// 0,
-		CC_NUM01,	// 1,
-		CC_NUM27,	// 2-7
-		CC_NUM89	// 8-9
-
-		NR_CHAR_CLASS
-	};
-
 	// action: max 14 (4 bit)
 	// token: max 255 (1 byte), így elvesztem a lehetőséget a bitoperátoros tesztelésre (megvizsgálni kell-e)
 	// char table: az összes olyan karakternek, amit használni akarok
@@ -609,8 +589,3 @@ PARSER
 
 		c		a		t		h		{
 		(!3:ID)	(!1:ID)	(!2:ID)	(!4:ID)	(5:CLOSE,SEEK_BACK)
-
-
-
-
-

@@ -52,9 +52,10 @@ namespace parser
 		//		- token type
 		//		- offset: how many chars track back or forward
 		// 0000 0000 0000 0000 0000 0000 0000 0010
-		//			      \_______/ \__/   || \__/
-		//			   		 |		  |	   ||   |
-		//              Token type  Offset /\ Action Type
+		//			      \_______/ \__/  ||| \__/
+		//			   		 |		  |	  |||   |
+		//           Token type  Offset  / || Action Type
+		//					 Need content / \
 		//					 Increment line	 Skip token
 		//------------------------------------------------------------------------------
 		CLOSE,
@@ -509,4 +510,3 @@ namespace parser
 }
 
 #endif	/* PARSER_H */
-
