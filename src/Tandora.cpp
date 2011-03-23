@@ -3,8 +3,8 @@
 #include "parser/JSONParser.h"
 
 
-//#define _ROOT "D:\\Works\\cpp\\Tandora\\"
-#define _ROOT "C:\\Users\\Zozzz\\Documents\\Tandora\\"
+#define _ROOT "D:\\Works\\cpp\\Tandora\\"
+//#define _ROOT "C:\\Users\\Zozzz\\Documents\\Tandora\\"
 
 using namespace std;
 using namespace common;

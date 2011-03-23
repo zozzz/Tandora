@@ -300,6 +300,8 @@ class Token:
                     if op == sre_constants.SUBPATTERN:
                         (res, pos) = self._test(val[1], chars, pos, level+1)
                         _print("sub_res", res, pos)
+                        if res is False:
+                            break;
 
                     elif op == sre_constants.BRANCH:
 

@@ -348,10 +348,11 @@ class ActionTable:
                     # ==========================================================================
                     else:
                         altTokens = self._findAvailTokens(char, token=token, length=pos)
+                        #print token.name, "["+chr(char)+":"+str(pos)+"]", "->", altTokens, self._tokenChars[token.name]
 
                         if len(altTokens) > 0:
-                            if( token.infinity ):
-                                print token.name, "["+chr(char)+":"+str(pos)+"]", "->", altTokens, self._tokenChars[token.name]
+                            #if token.infinity:
+                            #    print token.name, "["+chr(char)+":"+str(pos)+"]", "->", altTokens, self._tokenChars[token.name]
 
                             if altTokens[0] == token.name:
                                 if group.infinity is False:
@@ -608,7 +609,10 @@ class ActionTable:
             else:
                 chars = [[ch]]
         else:
-            chars = self._tokenChars[token.name][:]
+            if length != -1:
+                chars = self._tokenChars[token.name][0:length]
+            else:
+                chars = self._tokenChars[token.name][:]
 
             if len(chars) == 0:
                 chars = [[ch]]
