@@ -386,12 +386,16 @@ class Token:
                                         res = True
                                     break
 
-                                elif not res:
+                                #elif not res:
+                                #elif greedy:
+                                else:
                                     (res, pos) = self._test(val[2], chars, _sp, level+1)
                                     _print("test:", res, pos, _sp, maxPos)
 
                                     if res is False:
                                         pos = _sp
+                                        if _start == 0:
+                                            res = True
                                         break
 
                                     if pos >= maxPos:
@@ -420,11 +424,16 @@ class Token:
                         pos = _sp
 
                 _print("before_ret", pos, res, maxPos)
-                if res == False or pos >= maxPos:
+                if pos >= maxPos:
                     _print("return:", (res, pos))
                     return (res, pos)
 
+                if res == True:
+                    break;
                 #pos += add_pos
+
+            if res == False:
+                return (res, pos)
 
             p_pos += 1
 

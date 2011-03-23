@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+'''
+@author zozzz
+'''
+
 from Token import Token
 
 # ==========================================================================
@@ -12,7 +17,8 @@ class Action:
         "CHAR_AT",
         "CHNG_TYPE",
         "INC_LINE",
-        "SEEK_FWD"
+        "SEEK_FWD",
+        "SUB_CHAR_AT"
     ]
 
     @classmethod
@@ -114,14 +120,24 @@ class ActionCharAt(Action):
 
 
 # ==========================================================================
-#
+# Egy tokenen belül vizsgálja a karakterek sorrendjét, 0-ik pozícióban reseteli
 # ==========================================================================
-class ActionNotCharAt(ActionCharAt):
-    def __init__(self):
-        ActionCharAt.__init__(self, 0)
+class ActionSubCharAt(ActionCharAt):
+    def __init__(self, token, pos=None, maxLength=0):
+        ActionCharAt.__init__(self, token, pos)
+        self.id = Action.id('SUB_CHAR_AT');
+        self.ml = maxLength
+
+        if maxLength > ActionCharAt.MAX_POS:
+            raise Exception("Length is too large "+str(maxLength)+"!")
+
+    def _getNumber(self):
+        ret = ActionCharAt._getNumber(self)
+        ret |= self.ml << 24
+        return ret
 
     def __str__(self):
-        return "<notCharAt>"
+        return "<subCharAt "+str(self.tid)+" pos="+str(self.posList)+" ml="+str(self.ml)+">"
 
 
 
@@ -161,19 +177,30 @@ class ActionClose(Action):
 
 
 # ==========================================================================
-#
+# Ha a sub True, akkor átvált arra tokenre, viszont ha az lezárul
+# visszaállítja az előzőre vagy lezárja az előzőt is ha closeParent == True
 # ==========================================================================
 class ActionChangeType(Action):
-    def __init__(self, token):
+    def __init__(self, token, sub=False, closeParent=False):
         Action.__init__(self, Action.id("CHNG_TYPE"), token)
+
+        self.sub = sub;
+        self.closeParent = closeParent;
 
     def _getNumber(self):
         ret = self.id
         ret |= self.tid << 4
+
+        if self.sub:
+            ret |= 0x10
+
+        if self.closeParent:
+            ret |= 0x20
+
         return ret
 
     def __str__(self):
-        return "<chngType "+str(self.tid)+">"
+        return "<chngType "+str(self.tid)+", sub="+str(self.sub)+", cp="+str(self.closeParent)+">"
 
 
 

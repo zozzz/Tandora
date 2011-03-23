@@ -90,7 +90,30 @@ namespace parser
 		//									    |
 		//									 Action Type
 		//------------------------------------------------------------------------------
-		INC_LINE
+		INC_LINE,
+
+		//------------------------------------------------------------------------------
+		// Seek forward x char
+		// 0000 0000 0000 0000 0000 0000 0000 0110
+		//							\_______/ \__/
+		//								|	    |
+		//							offset	 Action Type
+		//------------------------------------------------------------------------------
+		SEEK_FWD,
+
+		//------------------------------------------------------------------------------
+		// Test char position inside token
+		// Params:
+		//		- token type
+		//		- position[4]: max 4 position test available (0-15)
+		//		- maxLength: string max length (0-15)
+		// 0000 0000 0000 0000 0000 0000 0000 0111
+		// \_______/ \__/ \__/ \__/ \__/ \__/ \__/
+		//	   |	   \	\____|___|____/    |
+		//	Token type |	   Positions	 Action Type
+		//			Max length
+		//------------------------------------------------------------------------------
+		SUB_CHAR_AT
 	};
 
 	#define BM_ACTION 0xF
@@ -160,6 +183,14 @@ namespace parser
 					case CHNG_TYPE:
 						buff += "fillcolor=\"#dc7904\"";
 					break;
+					
+					case SEEK_FWD:
+						buff += "fillcolor=\"#91c7d4\"";
+					break;
+					
+					case SUB_CHAR_AT:
+						buff += "fillcolor=\"#c7e46f\"";
+					break;
 				}
 			}
 
@@ -205,6 +236,15 @@ namespace parser
 						_type = new char[sizeof(int)*8+1];
 						sprintf(_type, "%d", (action >> 4));
 						buff += _type;
+					break;
+					
+					case SEEK_FWD:
+						_offset = new char[sizeof(int)*8+1];
+						sprintf(_offset, "%d", (action >> 4));
+						buff += _offset;
+					break;
+					
+					case SUB_CHAR_AT:
 					break;
 				}
 			}
@@ -275,6 +315,7 @@ namespace parser
 			_buffer += "node[shape=record, fontsize=10, height=0.25, width=1.8, fontname=\"monospace\", style=filled, fontcolor=\"#FFFFFF\", fixedsize=true];\n";
 
 			_fillData();
+			_addColorInfo();
 			_buffer += "}";
 			common::File f(_outFile, common::File::WRITE);
 			f.write(_buffer.c_str(), _buffer.size());
@@ -331,6 +372,21 @@ namespace parser
 				(*iter)->write(_buffer);
 			}
 		}
+		
+		void _addColorInfo()
+		{
+			const char* anames[] = {"ERROR", "CONTINUE", "CLOSE", "CHAR_AT", "CHNG_TYPE", "INC_LINE", "SEEK_FWD", "SUB_CHAR_AT"};
+			for(int i=0, l=SUB_CHAR_AT+1 ; i<l ; i++)
+			{
+				Node n;
+				n.action = i;
+				
+				_buffer += anames[i];
+				_buffer += " [";
+				n.writeActionStyle(_buffer);
+				_buffer += "]";
+			}
+		}
 	};
 	#endif
 
@@ -366,7 +422,11 @@ namespace parser
 
 			while( (ch = buffer[_bufferPos]) )
 			{
-				_action = _ActionTable[_token][ch];
+				if( ch >= 128 )
+					_action = 0x1;
+				else
+					_action = _ActionTable[_token][ch];
+				
 				#ifdef __DEBUG__
 				if( _graph != NULL )
 				{
@@ -448,8 +508,8 @@ namespace parser
 			t.type = _token;
 			_token = 0;
 
-			trace(_bufferLength);
-			trace(_bufferPos);
+			//trace(_bufferLength);
+			//trace(_bufferPos);
 			return _bufferLength-1 > _bufferPos;
 		}
 
@@ -468,17 +528,17 @@ namespace parser
 		unsigned int _guid;
 		#endif
 
+
+		TokenReader(
 		#ifdef __DEBUG__
-		TokenReader(const char* fileName):
+			const char* fileName
+		#endif
+			):
 			_bufferPos(0),
 			_token(0),
 			_guid(0),
 			_line(0),
 			_col(0)
-		#else
-		TokenReader():
-			_token(0)
-		#endif
 		{
 			#ifdef __DEBUG__
 			if( fileName )

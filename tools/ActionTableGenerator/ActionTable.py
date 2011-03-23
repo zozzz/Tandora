@@ -217,6 +217,10 @@ class ActionTable:
                     if len(_alts):
                         self.actionTable[token.name][char] = ActionClose(1, token)
 
+            # inc line token elhelyezés a következő képpen:
+            # if AT[x][x] == 0 || AT[x][x] is not ActionChangeType
+            # ActionChangeType(inclineToken, True, False)
+
         for (key, value) in self.actionTable.iteritems():
             print key,
             for action in value:
@@ -328,10 +332,14 @@ class ActionTable:
                             _chs.append([])
 
                         _chs[gpos].append(char)
-                        
+
                         (tr_match, tr_length) = token.test(_chs, "end", Token.RESULT_EXTEND)
                         if tr_match and tr_length-1 == gpos:
-                            print "end: ", chr(char), gpos, tr_match, tr_length, token.name
+                            altTokens = self._findAvailTokens(_chs, length=gpos)
+                            if len(altTokens) > 0 and altTokens[0] != token.name:
+                                AT[token.name][char] = ActionChangeType(self.lexer._tokens[altTokens[0]], True, True)
+                            else:
+                                AT[token.name][char] = ActionSubCharAt(token, gpos, token.end.maxWidth())
 
                             endAvailChars.append((token, gpos, char))
 
@@ -340,9 +348,10 @@ class ActionTable:
                     # ==========================================================================
                     else:
                         altTokens = self._findAvailTokens(char, token=token, length=pos)
-                        #print token.name, "["+chr(char)+":"+str(pos)+"]", "->", altTokens, self._tokenChars[token.name]
 
                         if len(altTokens) > 0:
+                            if( token.infinity ):
+                                print token.name, "["+chr(char)+":"+str(pos)+"]", "->", altTokens, self._tokenChars[token.name]
 
                             if altTokens[0] == token.name:
                                 if group.infinity is False:
@@ -387,6 +396,7 @@ class ActionTable:
 
         pass
 
+    '''
     def _fillActionTable_old(self):
 
 
@@ -551,7 +561,7 @@ class ActionTable:
             for action in value:
                 print action,
             print ""
-
+    '''
 
     def _insertTokenDefaultAction(self, token):
         pass
@@ -593,7 +603,10 @@ class ActionTable:
             result = []
 
         if token is None or self._tokenChars.has_key(token.name) is False:
-            chars = [[ch]]
+            if isinstance(ch, list):
+                chars = ch[:]
+            else:
+                chars = [[ch]]
         else:
             chars = self._tokenChars[token.name][:]
 

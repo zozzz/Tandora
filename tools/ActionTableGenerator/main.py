@@ -79,7 +79,7 @@ if __name__ == '__main__':
     #print CMP1.test([[ord('0')]])
     #print CMP1.test([[ord('z'), ord('0'), ord('1')], [ord('.')]])
 
-    test = "alma"
+    test = "'alma'"
 
     """chrs = [
         [ord("h")],
@@ -94,6 +94,11 @@ if __name__ == '__main__':
         chrs.append([ord(ch)])
 
     chrs.append([0])
+
+    #print json.lexer._tokens["LI_INT"].test([[45, 43, 49, 50, 51, 52, 53, 54, 55, 56, 57], [48]], resultType=Token.RESULT_EXTEND);
+    #print "------------------------------------------------"
+    #print json.lexer._tokens["LI_FLOAT"].test([[57], [48]], resultType=Token.RESULT_EXTEND);
+    #print json.lexer._tokens["LI_STRING"].test(chrs, resultType=Token.RESULT_EXTEND);
 
     #print len(chrs)
     #print json.lexer._tokens["IDENTIFIER"].test(chrs, resultType=Token.RESULT_EXTEND)
